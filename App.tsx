@@ -19,20 +19,27 @@ import MyBooksScreen from './src/screens/MyBooksScreen';
 import EditBookScreen from './src/screens/EditBookScreen';
 import OrderScreen from './src/screens/OrderScreen';
 import BookDetailScreen from './src/screens/BookDetailScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import LoginScreen from './src/screens/LoginScreen';
+import RegisterScreen from './src/screens/RegisterScreen';
+import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
 import { Colors } from './src/theme/colors';
 
 const Tab = createBottomTabNavigator();
+const RootStackNav = createNativeStackNavigator();
+const AuthStackNav = createNativeStackNavigator();
 const HomeStackNav = createNativeStackNavigator();
 const ChatStackNav = createNativeStackNavigator();
 const SellStackNav = createNativeStackNavigator();
 
-// Placeholder screens
-function AddScreen() {
+// Auth Stack
+function AuthStack() {
   return (
-    <View style={styles.screenContainer}>
-      <Icon name="add-circle-outline" size={48} color={Colors.textMuted} />
-      <Text style={styles.screenTitle}>Đăng bán</Text>
-    </View>
+    <AuthStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <AuthStackNav.Screen name="Login" component={LoginScreen} />
+      <AuthStackNav.Screen name="Register" component={RegisterScreen} />
+      <AuthStackNav.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+    </AuthStackNav.Navigator>
   );
 }
 
@@ -48,14 +55,6 @@ function SellStack() {
 }
 
 
-function ProfileScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <Icon name="person-outline" size={48} color={Colors.textMuted} />
-      <Text style={styles.screenTitle}>Hồ sơ</Text>
-    </View>
-  );
-}
 
 // Home Stack with Book Detail
 function HomeStack() {
@@ -85,73 +84,83 @@ const tabIcons: Record<string, { active: string; inactive: string }> = {
   Profile: { active: 'person', inactive: 'person-outline' },
 };
 
+// Main Tabs (Bottom Navigation)
+function MainTabs() {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: -2,
+        },
+        tabBarStyle: {
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 0,
+          height: 85,
+          paddingTop: 8,
+          paddingBottom: 28,
+          shadowColor: 'rgba(0,0,0,0.08)',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 1,
+          shadowRadius: 12,
+          elevation: 8,
+        },
+        tabBarIcon: ({ focused, color }) => {
+          const iconNames = tabIcons[route.name];
+          const iconName = focused ? iconNames.active : iconNames.inactive;
+
+          if (route.name === 'Add') {
+            return (
+              <View style={styles.addButton}>
+                <Icon name="add" size={28} color="#FFFFFF" />
+              </View>
+            );
+          }
+
+          return <Icon name={iconName} size={22} color={color} />;
+        },
+      })}>
+      <Tab.Screen
+        name="Home"
+        component={HomeStack}
+        options={{ tabBarLabel: 'Trang chủ' }}
+      />
+      <Tab.Screen
+        name="Chat"
+        component={ChatStack}
+        options={{ tabBarLabel: 'Tin nhắn' }}
+      />
+      <Tab.Screen
+        name="Add"
+        component={SellStack}
+        options={{ tabBarLabel: 'Đăng bán' }}
+      />
+      <Tab.Screen
+        name="Orders"
+        component={OrderScreen}
+        options={{ tabBarLabel: 'Đơn hàng' }}
+      />
+      <Tab.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{ tabBarLabel: 'Hồ sơ' }}
+      />
+    </Tab.Navigator>
+  );
+}
+
 function App() {
   return (
     <SafeAreaProvider>
       <NavigationContainer>
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            headerShown: false,
-            tabBarActiveTintColor: Colors.primary,
-            tabBarInactiveTintColor: Colors.textMuted,
-            tabBarLabelStyle: {
-              fontSize: 11,
-              fontWeight: '600',
-              marginTop: -2,
-            },
-            tabBarStyle: {
-              backgroundColor: '#FFFFFF',
-              borderTopWidth: 0,
-              height: 85,
-              paddingTop: 8,
-              paddingBottom: 28,
-              shadowColor: 'rgba(0,0,0,0.08)',
-              shadowOffset: { width: 0, height: -4 },
-              shadowOpacity: 1,
-              shadowRadius: 12,
-              elevation: 8,
-            },
-            tabBarIcon: ({ focused, color, size }) => {
-              const iconNames = tabIcons[route.name];
-              const iconName = focused ? iconNames.active : iconNames.inactive;
-
-              if (route.name === 'Add') {
-                return (
-                  <View style={styles.addButton}>
-                    <Icon name="add" size={28} color="#FFFFFF" />
-                  </View>
-                );
-              }
-
-              return <Icon name={iconName} size={22} color={color} />;
-            },
-          })}>
-          <Tab.Screen
-            name="Home"
-            component={HomeStack}
-            options={{ tabBarLabel: 'Trang chủ' }}
-          />
-          <Tab.Screen
-            name="Chat"
-            component={ChatStack}
-            options={{ tabBarLabel: 'Tin nhắn' }}
-          />
-          <Tab.Screen
-            name="Add"
-            component={SellStack}
-            options={{ tabBarLabel: 'Đăng bán' }}
-          />
-          <Tab.Screen
-            name="Orders"
-            component={OrderScreen}
-            options={{ tabBarLabel: 'Đơn hàng' }}
-          />
-          <Tab.Screen
-            name="Profile"
-            component={ProfileScreen}
-            options={{ tabBarLabel: 'Hồ sơ' }}
-          />
-        </Tab.Navigator>
+        <RootStackNav.Navigator screenOptions={{ headerShown: false }}>
+          <RootStackNav.Screen name="Auth" component={AuthStack} />
+          <RootStackNav.Screen name="MainTabs" component={MainTabs} />
+        </RootStackNav.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   );
