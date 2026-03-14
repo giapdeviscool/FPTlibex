@@ -21,7 +21,6 @@ export default function ForgotPasswordScreen({ navigation }: any) {
       Alert.alert('Lỗi', 'Vui lòng nhập Mã số sinh viên (MSSV) của bạn.');
       return;
     }
-
     // Simulate API call
     setIsSubmitted(true);
   };
@@ -30,7 +29,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}>
-      
+
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}
@@ -86,7 +85,7 @@ export default function ForgotPasswordScreen({ navigation }: any) {
               <Text style={{ fontWeight: '700', color: Colors.text }}>{email.toUpperCase()}@fpt.edu.vn</Text>
               {'\n\n'}Vui lòng kiểm tra hộp thư đến của bạn.
             </Text>
-            
+
             <TouchableOpacity
               style={styles.backToLoginBtn}
               onPress={() => navigation.navigate('Login')}>

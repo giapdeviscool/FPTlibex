@@ -16,7 +16,7 @@ import { mockBooks } from '../data/mockBooks';
 const { width } = Dimensions.get('window');
 
 const formatPrice = (price: number) => {
-  return price.toLocaleString('vi-VN') + 'đ';
+  return price.toLocaleString('vi-VN') + ' F-Coin';
 };
 
 const conditionColor = (condition: string) => {
@@ -165,7 +165,16 @@ export default function BookDetailScreen({ route, navigation }: any) {
           <Icon name="chatbubble-outline" size={20} color={Colors.primary} />
           <Text style={styles.chatButtonText}>Chat</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.buyButton} activeOpacity={0.85}>
+        <TouchableOpacity 
+          style={styles.buyButton} 
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('Checkout', {
+             bookId: book.id,
+             bookTitle: book.title,
+             bookPrice: book.price,
+             bookImage: book.image,
+             sellerName: book.seller
+          })}>
           <Icon name="cart-outline" size={20} color="#FFF" />
           <Text style={styles.buyButtonText}>Mua ngay • {formatPrice(book.price)}</Text>
         </TouchableOpacity>

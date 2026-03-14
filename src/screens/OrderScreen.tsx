@@ -13,7 +13,7 @@ import { Colors } from '../theme/colors';
 import { myPurchases, mySales, Order } from '../data/mockOrders';
 
 const formatPrice = (price: number) => {
-  return price.toLocaleString('vi-VN') + 'đ';
+  return price.toLocaleString('vi-VN') + ' F-Coin';
 };
 
 const statusColor = (status: Order['status']) => {
@@ -46,37 +46,93 @@ const statusIcon = (status: Order['status']) => {
   }
 };
 
-function OrderItem({ order, isSeller }: { order: Order; isSeller: boolean }) {
+function OrderItem({ 
+  order, 
+  isSeller, 
+  onAction 
+}: { 
+  order: Order; 
+  isSeller: boolean;
+  onAction: (orderId: string, newStatus: Order['status'], newLabel: string) => void;
+}) {
   return (
-    <TouchableOpacity style={styles.orderCard} activeOpacity={0.8}>
-      <Image source={{ uri: order.bookImage }} style={styles.orderImage} />
-      <View style={styles.orderInfo}>
-        <Text style={styles.orderTitle} numberOfLines={1}>
-          {order.bookTitle}
-        </Text>
-        <Text style={styles.orderUser} numberOfLines={1}>
-          <Icon name={isSeller ? 'person-outline' : 'storefront-outline'} size={12} color={Colors.textSecondary} />
-          {'  '}{isSeller ? `Người mua: ${order.otherUser}` : `Người bán: ${order.otherUser}`}
-        </Text>
-        <Text style={styles.orderPrice}>{formatPrice(order.price)}</Text>
-        <View style={styles.orderBottom}>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor(order.status) + '18' }]}>
-            <Icon name={statusIcon(order.status)} size={13} color={statusColor(order.status)} />
-            <Text style={[styles.statusText, { color: statusColor(order.status) }]}>
-              {order.statusLabel}
-            </Text>
+    <View style={styles.orderCardWrap}>
+      <TouchableOpacity style={styles.orderCard} activeOpacity={0.8}>
+        <Image source={{ uri: order.bookImage }} style={styles.orderImage} />
+        <View style={styles.orderInfo}>
+          <Text style={styles.orderTitle} numberOfLines={1}>
+            {order.bookTitle}
+          </Text>
+          <Text style={styles.orderUser} numberOfLines={1}>
+            <Icon name={isSeller ? 'person-outline' : 'storefront-outline'} size={12} color={Colors.textSecondary} />
+            {'  '}{isSeller ? `Người mua: ${order.otherUser}` : `Người bán: ${order.otherUser}`}
+          </Text>
+          <Text style={styles.orderPrice}>{formatPrice(order.price)}</Text>
+          <View style={styles.orderBottom}>
+            <View style={[styles.statusBadge, { backgroundColor: statusColor(order.status) + '18' }]}>
+              <Icon name={statusIcon(order.status)} size={13} color={statusColor(order.status)} />
+              <Text style={[styles.statusText, { color: statusColor(order.status) }]}>
+                {order.statusLabel}
+              </Text>
+            </View>
+            <Text style={styles.orderDate}>{order.date}</Text>
           </View>
-          <Text style={styles.orderDate}>{order.date}</Text>
         </View>
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+
+      {/* Action Buttons based on status & role */}
+      {isSeller && order.status === 'pending' && (
+        <View style={styles.actionRow}>
+          <TouchableOpacity 
+            style={[styles.actionBtn, styles.actionBtnOutline]}
+            onPress={() => onAction(order.id, 'cancelled', 'Đã huỷ')}>
+            <Text style={styles.actionBtnTextOutline}>Từ chối</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.actionBtn, styles.actionBtnPrimary]}
+            onPress={() => onAction(order.id, 'confirmed', 'Đã xác nhận')}>
+            <Text style={styles.actionBtnTextPrimary}>Xác nhận đơn</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {isSeller && order.status === 'confirmed' && (
+        <View style={styles.actionRow}>
+          <TouchableOpacity 
+            style={[styles.actionBtn, styles.actionBtnPrimary]}
+            onPress={() => onAction(order.id, 'shipping', 'Đang giao')}>
+            <Text style={styles.actionBtnTextPrimary}>Đã giao sách</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {!isSeller && order.status === 'shipping' && (
+        <View style={styles.actionRow}>
+          <TouchableOpacity 
+            style={[styles.actionBtn, styles.actionBtnSuccess]}
+            onPress={() => onAction(order.id, 'completed', 'Hoàn thành')}>
+            <Text style={styles.actionBtnTextPrimary}>Đã nhận được sách</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+    </View>
   );
 }
 
 export default function OrderScreen() {
   const [activeTab, setActiveTab] = useState<'purchases' | 'sales'>('purchases');
+  const [purchases, setPurchases] = useState(myPurchases);
+  const [sales, setSales] = useState(mySales);
 
-  const orders = activeTab === 'purchases' ? myPurchases : mySales;
+  const handleAction = (orderId: string, newStatus: Order['status'], newLabel: string) => {
+    if (activeTab === 'purchases') {
+      setPurchases(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, statusLabel: newLabel } : o));
+    } else {
+      setSales(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, statusLabel: newLabel } : o));
+    }
+  };
+
+  const orders = activeTab === 'purchases' ? purchases : sales;
 
   return (
     <View style={styles.container}>
@@ -100,10 +156,10 @@ export default function OrderScreen() {
           <Text style={[styles.tabText, activeTab === 'purchases' && styles.tabTextActive]}>
             Đơn mua
           </Text>
-          {myPurchases.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length > 0 && (
+          {purchases.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length > 0 && (
             <View style={styles.tabBadge}>
               <Text style={styles.tabBadgeText}>
-                {myPurchases.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length}
+                {purchases.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length}
               </Text>
             </View>
           )}
@@ -120,10 +176,10 @@ export default function OrderScreen() {
           <Text style={[styles.tabText, activeTab === 'sales' && styles.tabTextActive]}>
             Đơn bán
           </Text>
-          {mySales.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length > 0 && (
+          {sales.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length > 0 && (
             <View style={styles.tabBadge}>
               <Text style={styles.tabBadgeText}>
-                {mySales.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length}
+                {sales.filter(o => o.status !== 'completed' && o.status !== 'cancelled').length}
               </Text>
             </View>
           )}
@@ -135,7 +191,11 @@ export default function OrderScreen() {
         data={orders}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <OrderItem order={item} isSeller={activeTab === 'sales'} />
+          <OrderItem 
+            order={item} 
+            isSeller={activeTab === 'sales'} 
+            onAction={handleAction} 
+          />
         )}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
@@ -226,8 +286,7 @@ const styles = StyleSheet.create({
     padding: 16,
     gap: 12,
   },
-  orderCard: {
-    flexDirection: 'row',
+  orderCardWrap: {
     backgroundColor: Colors.surface,
     borderRadius: 16,
     overflow: 'hidden',
@@ -236,6 +295,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
+    marginBottom: 0, // using gap from listContent
+  },
+  orderCard: {
+    flexDirection: 'row',
   },
   orderImage: {
     width: 90,
@@ -283,6 +346,44 @@ const styles = StyleSheet.create({
   orderDate: {
     fontSize: 11,
     color: Colors.textMuted,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    paddingTop: 8,
+    gap: 10,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+  },
+  actionBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionBtnOutline: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  actionBtnPrimary: {
+    backgroundColor: Colors.primary,
+  },
+  actionBtnSuccess: {
+    backgroundColor: Colors.success,
+  },
+  actionBtnTextOutline: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  actionBtnTextPrimary: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   emptyState: {
     alignItems: 'center',

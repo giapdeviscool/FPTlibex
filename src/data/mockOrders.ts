@@ -9,7 +9,7 @@ export interface Order {
   date: string;
 }
 
-export const myPurchases: Order[] = [
+export let myPurchases: Order[] = [
   {
     id: '1',
     bookTitle: 'Clean Code',
@@ -42,7 +42,7 @@ export const myPurchases: Order[] = [
   },
 ];
 
-export const mySales: Order[] = [
+export let mySales: Order[] = [
   {
     id: '4',
     bookTitle: 'Introduction to Algorithms',

@@ -14,12 +14,12 @@ import { Colors } from '../theme/colors';
 
 export default function RegisterScreen({ navigation }: any) {
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+  const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const isFormValid = name && email && password && confirmPassword === password;
+  const isFormValid = name && studentId && password && confirmPassword === password;
 
   const handleRegister = () => {
     // Navigate straight to Main tabs after successful register
@@ -61,17 +61,16 @@ export default function RegisterScreen({ navigation }: any) {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email FPT (*@fpt.edu.vn)</Text>
+            <Text style={styles.label}>Mã số sinh viên FPT</Text>
             <View style={styles.inputContainer}>
-              <Icon name="mail-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+              <Icon name="person-circle-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
               <TextInput
                 style={styles.input}
-                placeholder="MSSV@fpt.edu.vn"
+                placeholder="Ví dụ: SE123456"
                 placeholderTextColor={Colors.border}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
+                value={studentId}
+                onChangeText={setStudentId}
+                autoCapitalize="characters"
               />
             </View>
           </View>

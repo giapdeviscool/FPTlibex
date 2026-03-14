@@ -13,6 +13,20 @@ import { Colors } from '../theme/colors';
 
 const menuItems = [
   {
+    id: 'deposit',
+    icon: 'logo-bitcoin',
+    title: 'Nạp F-Coin',
+    color: '#F59E0B', // Yellow/Gold
+    route: 'Deposit',
+  },
+  {
+    id: 'withdraw',
+    icon: 'cash-outline',
+    title: 'Rút tiền',
+    color: '#10B981', // Green
+    route: 'Withdraw',
+  },
+  {
     id: '1',
     icon: 'person-outline',
     title: 'Chỉnh sửa hồ sơ',
@@ -24,33 +38,9 @@ const menuItems = [
     title: 'Sách đã lưu',
     color: '#8B5CF6', // Purple
   },
-  {
-    id: '3',
-    icon: 'bar-chart-outline',
-    title: 'Thống kê doanh thu',
-    color: '#10B981', // Green
-  },
-  {
-    id: '4',
-    icon: 'map-outline',
-    title: 'Địa chỉ giao dịch',
-    color: '#F59E0B', // Yellow
-  },
-  {
-    id: '5',
-    icon: 'shield-checkmark-outline',
-    title: 'Chính sách & An toàn',
-    color: Colors.textMuted,
-  },
-  {
-    id: '6',
-    icon: 'help-buoy-outline',
-    title: 'Trung tâm hỗ trợ',
-    color: Colors.textMuted,
-  },
 ];
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
@@ -109,7 +99,15 @@ export default function ProfileScreen() {
         <View style={styles.menuContainer}>
           {menuItems.map((item, index) => (
             <React.Fragment key={item.id}>
-              <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+              <TouchableOpacity
+                style={styles.menuItem}
+                activeOpacity={0.7}
+                onPress={() => {
+                  if (item.route) {
+                    navigation.navigate(item.route);
+                  }
+                }}
+              >
                 <View style={[styles.menuIconWrap, { backgroundColor: item.color + '15' }]}>
                   <Icon name={item.icon} size={20} color={item.color} />
                 </View>

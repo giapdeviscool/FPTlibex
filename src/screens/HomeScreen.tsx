@@ -54,11 +54,9 @@ export default function HomeScreen({ navigation }: any) {
             <Text style={styles.headerTitle}>FPTlibex</Text>
           </View>
           <View style={styles.headerIcons}>
-            <TouchableOpacity style={styles.iconButton}>
-              <Icon name="chatbubble-ellipses-outline" size={22} color="#FFF" />
-              <View style={styles.notifDot} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.iconButton}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => navigation.navigate('Notification')}>
               <Icon name="notifications-outline" size={22} color="#FFF" />
               <View style={styles.notifDot} />
             </TouchableOpacity>

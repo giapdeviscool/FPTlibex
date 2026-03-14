@@ -9,18 +9,29 @@ import {
   Platform,
   Image,
   StatusBar,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
+import { mockUsers } from '../data/mockUsers';
 
 export default function LoginScreen({ navigation }: any) {
-  const [email, setEmail] = useState('');
+  const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = () => {
-    // Navigate to Main app tabs on login
-    navigation.replace('MainTabs');
+    // Check against mock data
+    const user = mockUsers.find(
+      u => u.studentId.toUpperCase() === studentId.toUpperCase() && u.password === password
+    );
+
+    if (user) {
+      // Navigate to Main app tabs on successful login
+      navigation.replace('MainTabs');
+    } else {
+      Alert.alert('Đăng nhập thất bại', 'MSSV hoặc mật khẩu không chính xác.');
+    }
   };
 
   return (
@@ -34,22 +45,21 @@ export default function LoginScreen({ navigation }: any) {
           <Icon name="book" size={42} color={Colors.primary} />
         </View>
         <Text style={styles.title}>Chào mừng trở lại!</Text>
-        <Text style={styles.subtitle}>Đăng nhập để mua bán giáo trình FPT</Text>
+        <Text style={styles.subtitle}>Đăng nhập để mua bán giáo trình bằng F-Coin</Text>
       </View>
 
       <View style={styles.form}>
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Mã số sinh viên FPT</Text>
           <View style={styles.inputContainer}>
-            <Icon name="mail-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+            <Icon name="person-circle-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="MSSV"
+              placeholder="Ví dụ: SE123456"
               placeholderTextColor={Colors.border}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
+              value={studentId}
+              onChangeText={setStudentId}
+              autoCapitalize="characters"
             />
           </View>
         </View>
@@ -85,9 +95,9 @@ export default function LoginScreen({ navigation }: any) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={[styles.loginBtn, (!email || !password) && styles.loginBtnDisabled]}
+          style={[styles.loginBtn, (!studentId || !password) && styles.loginBtnDisabled]}
           onPress={handleLogin}
-          disabled={!email || !password}
+          disabled={!studentId || !password}
           activeOpacity={0.8}>
           <Text style={styles.loginBtnText}>Đăng nhập</Text>
         </TouchableOpacity>

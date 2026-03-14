@@ -131,7 +131,7 @@ export default function EditBookScreen({ route, navigation }: any) {
         <View style={styles.priceRow}>
           <View style={[styles.inputGroup, { flex: 1 }]}>
             <View style={styles.inputIcon}>
-              <Text style={styles.currencyIcon}>₫</Text>
+              <Icon name="logo-bitcoin" size={18} color={Colors.primary} />
             </View>
             <TextInput
               style={styles.input}
@@ -145,7 +145,7 @@ export default function EditBookScreen({ route, navigation }: any) {
 
           <View style={[styles.inputGroup, { flex: 1 }]}>
             <View style={styles.inputIcon}>
-              <Text style={[styles.currencyIcon, { color: Colors.textMuted }]}>₫</Text>
+              <Icon name="logo-bitcoin" size={18} color={Colors.textMuted} />
             </View>
             <TextInput
               style={styles.input}

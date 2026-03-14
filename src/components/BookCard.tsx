@@ -32,7 +32,7 @@ const conditionColor = (condition: Book['condition']) => {
 };
 
 const formatPrice = (price: number) => {
-  return price.toLocaleString('vi-VN') + 'đ';
+  return price.toLocaleString('vi-VN') + ' F-Coin';
 };
 
 const getDiscount = (price: number, originalPrice: number) => {

@@ -15,7 +15,7 @@ import { Colors } from '../theme/colors';
 import { mockMessages, Message } from '../data/mockMessages';
 
 const formatPrice = (price: number) => {
-  return price.toLocaleString('vi-VN') + 'đ';
+  return price.toLocaleString('vi-VN') + ' F-Coin';
 };
 
 function MessageBubble({ message }: { message: Message }) {

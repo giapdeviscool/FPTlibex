@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { StyleSheet, View, Text } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -23,6 +23,11 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
+import NotificationScreen from './src/screens/NotificationScreen';
+import DepositScreen from './src/screens/DepositScreen';
+import WithdrawScreen from './src/screens/WithdrawScreen';
+import PaymentQRScreen from './src/screens/PaymentQRScreen';
+import CheckoutScreen from './src/screens/CheckoutScreen';
 import { Colors } from './src/theme/colors';
 
 const Tab = createBottomTabNavigator();
@@ -56,12 +61,13 @@ function SellStack() {
 
 
 
-// Home Stack with Book Detail
+// Home Stack with Book Detail and Notifications
 function HomeStack() {
   return (
     <HomeStackNav.Navigator screenOptions={{ headerShown: false }}>
       <HomeStackNav.Screen name="HomeMain" component={HomeScreen} />
       <HomeStackNav.Screen name="BookDetail" component={BookDetailScreen} />
+      <HomeStackNav.Screen name="Notification" component={NotificationScreen} />
     </HomeStackNav.Navigator>
   );
 }
@@ -114,11 +120,7 @@ function MainTabs() {
           const iconName = focused ? iconNames.active : iconNames.inactive;
 
           if (route.name === 'Add') {
-            return (
-              <View style={styles.addButton}>
-                <Icon name="add" size={28} color="#FFFFFF" />
-              </View>
-            );
+            return <Icon name="pricetag" size={24} color={color} />;
           }
 
           return <Icon name={iconName} size={22} color={color} />;
@@ -158,8 +160,12 @@ function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <RootStackNav.Navigator screenOptions={{ headerShown: false }}>
-          <RootStackNav.Screen name="Auth" component={AuthStack} />
+          {/* <RootStackNav.Screen name="Auth" component={AuthStack} /> */}
           <RootStackNav.Screen name="MainTabs" component={MainTabs} />
+          <RootStackNav.Screen name="Deposit" component={DepositScreen} />
+          <RootStackNav.Screen name="Withdraw" component={WithdrawScreen} />
+          <RootStackNav.Screen name="PaymentQR" component={PaymentQRScreen} />
+          <RootStackNav.Screen name="Checkout" component={CheckoutScreen} />
         </RootStackNav.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
