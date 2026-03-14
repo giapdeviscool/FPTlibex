@@ -14,21 +14,19 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import HomeScreen from './src/screens/HomeScreen';
 import ChatScreen from './src/screens/ChatScreen';
 import ChatDetailScreen from './src/screens/ChatDetailScreen';
+import SellBookScreen from './src/screens/SellBookScreen';
+import MyBooksScreen from './src/screens/MyBooksScreen';
+import EditBookScreen from './src/screens/EditBookScreen';
+import OrderScreen from './src/screens/OrderScreen';
+import BookDetailScreen from './src/screens/BookDetailScreen';
 import { Colors } from './src/theme/colors';
 
 const Tab = createBottomTabNavigator();
 const HomeStackNav = createNativeStackNavigator();
 const ChatStackNav = createNativeStackNavigator();
+const SellStackNav = createNativeStackNavigator();
 
 // Placeholder screens
-function BookDetailScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Chi tiết sách</Text>
-    </View>
-  );
-}
-
 function AddScreen() {
   return (
     <View style={styles.screenContainer}>
@@ -38,14 +36,17 @@ function AddScreen() {
   );
 }
 
-function NotificationScreen() {
+// Sell Stack
+function SellStack() {
   return (
-    <View style={styles.screenContainer}>
-      <Icon name="notifications-outline" size={48} color={Colors.textMuted} />
-      <Text style={styles.screenTitle}>Thông báo</Text>
-    </View>
+    <SellStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <SellStackNav.Screen name="MyBooks" component={MyBooksScreen} />
+      <SellStackNav.Screen name="SellBook" component={SellBookScreen} />
+      <SellStackNav.Screen name="EditBook" component={EditBookScreen} />
+    </SellStackNav.Navigator>
   );
 }
+
 
 function ProfileScreen() {
   return (
@@ -80,7 +81,7 @@ const tabIcons: Record<string, { active: string; inactive: string }> = {
   Home: { active: 'home', inactive: 'home-outline' },
   Chat: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
   Add: { active: 'add-circle', inactive: 'add-circle-outline' },
-  Notifications: { active: 'notifications', inactive: 'notifications-outline' },
+  Orders: { active: 'receipt', inactive: 'receipt-outline' },
   Profile: { active: 'person', inactive: 'person-outline' },
 };
 
@@ -137,13 +138,13 @@ function App() {
           />
           <Tab.Screen
             name="Add"
-            component={AddScreen}
+            component={SellStack}
             options={{ tabBarLabel: 'Đăng bán' }}
           />
           <Tab.Screen
-            name="Notifications"
-            component={NotificationScreen}
-            options={{ tabBarLabel: 'Thông báo' }}
+            name="Orders"
+            component={OrderScreen}
+            options={{ tabBarLabel: 'Đơn hàng' }}
           />
           <Tab.Screen
             name="Profile"

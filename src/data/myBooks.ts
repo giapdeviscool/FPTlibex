@@ -1,0 +1,40 @@
+import { Book } from './mockBooks';
+
+export const myPostedBooks: Book[] = [
+  {
+    id: 'my1',
+    title: 'Introduction to Algorithms',
+    author: 'Thomas H. Cormen',
+    price: 120000,
+    originalPrice: 350000,
+    condition: 'Tốt',
+    image: 'https://m.media-amazon.com/images/I/61ZFuVSiBSL._SL1500_.jpg',
+    seller: 'Tôi',
+    faculty: 'CNTT',
+    postedAt: '2 giờ trước',
+  },
+  {
+    id: 'my2',
+    title: 'Head First Design Patterns',
+    author: 'Eric Freeman',
+    price: 95000,
+    originalPrice: 280000,
+    condition: 'Tốt',
+    image: 'https://m.media-amazon.com/images/I/61APhXCksuL._SL1500_.jpg',
+    seller: 'Tôi',
+    faculty: 'CNTT',
+    postedAt: '1 ngày trước',
+  },
+  {
+    id: 'my3',
+    title: 'Marketing căn bản',
+    author: 'Philip Kotler',
+    price: 55000,
+    originalPrice: 180000,
+    condition: 'Như mới',
+    image: 'https://m.media-amazon.com/images/I/71wSMFCfKPL._SL1500_.jpg',
+    seller: 'Tôi',
+    faculty: 'Marketing',
+    postedAt: '3 ngày trước',
+  },
+];

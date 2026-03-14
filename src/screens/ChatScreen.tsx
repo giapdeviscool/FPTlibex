@@ -86,7 +86,7 @@ function ConversationItem({
 export default function ChatScreen({ navigation }: any) {
   const [searchText, setSearchText] = useState<string>('');
 
-  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
+  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>(mockConversations);
 
   const unreadTotal = mockConversations.reduce(
     (sum, c) => sum + c.unreadCount,
