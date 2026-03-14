@@ -6,7 +6,6 @@ import {
   ScrollView,
   TextInput,
   TouchableOpacity,
-  FlatList,
   Dimensions,
   StatusBar,
 } from 'react-native';
@@ -76,9 +75,6 @@ export default function HomeScreen({ navigation }: any) {
             value={searchText}
             onChangeText={setSearchText}
           />
-          <TouchableOpacity style={styles.filterButton}>
-            <Icon name="options-outline" size={18} color={Colors.primary} />
-          </TouchableOpacity>
         </View>
       </View>
 

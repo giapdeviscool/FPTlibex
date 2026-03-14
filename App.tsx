@@ -12,25 +12,19 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 import HomeScreen from './src/screens/HomeScreen';
+import ChatScreen from './src/screens/ChatScreen';
+import ChatDetailScreen from './src/screens/ChatDetailScreen';
 import { Colors } from './src/theme/colors';
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
+const HomeStackNav = createNativeStackNavigator();
+const ChatStackNav = createNativeStackNavigator();
 
 // Placeholder screens
 function BookDetailScreen() {
   return (
     <View style={styles.screenContainer}>
       <Text style={styles.screenTitle}>Chi tiết sách</Text>
-    </View>
-  );
-}
-
-function ChatScreen() {
-  return (
-    <View style={styles.screenContainer}>
-      <Icon name="chatbubbles-outline" size={48} color={Colors.textMuted} />
-      <Text style={styles.screenTitle}>Tin nhắn</Text>
     </View>
   );
 }
@@ -65,10 +59,20 @@ function ProfileScreen() {
 // Home Stack with Book Detail
 function HomeStack() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="HomeMain" component={HomeScreen} />
-      <Stack.Screen name="BookDetail" component={BookDetailScreen} />
-    </Stack.Navigator>
+    <HomeStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStackNav.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStackNav.Screen name="BookDetail" component={BookDetailScreen} />
+    </HomeStackNav.Navigator>
+  );
+}
+
+// Chat Stack with Chat Detail
+function ChatStack() {
+  return (
+    <ChatStackNav.Navigator screenOptions={{ headerShown: false }}>
+      <ChatStackNav.Screen name="ChatList" component={ChatScreen} />
+      <ChatStackNav.Screen name="ChatDetail" component={ChatDetailScreen} />
+    </ChatStackNav.Navigator>
   );
 }
 
@@ -128,7 +132,7 @@ function App() {
           />
           <Tab.Screen
             name="Chat"
-            component={ChatScreen}
+            component={ChatStack}
             options={{ tabBarLabel: 'Tin nhắn' }}
           />
           <Tab.Screen
