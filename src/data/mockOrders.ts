@@ -1,5 +1,6 @@
 export interface Order {
   id: string;
+  bookId: string;
   bookTitle: string;
   bookImage: string;
   price: number;
@@ -12,6 +13,7 @@ export interface Order {
 export let myPurchases: Order[] = [
   {
     id: '1',
+    bookId: '2',
     bookTitle: 'Clean Code',
     bookImage: 'https://m.media-amazon.com/images/I/51E2055ZGUL._SL1000_.jpg',
     price: 85000,
@@ -22,6 +24,7 @@ export let myPurchases: Order[] = [
   },
   {
     id: '2',
+    bookId: '3',
     bookTitle: 'Nguyên lý Kế toán',
     bookImage: 'https://m.media-amazon.com/images/I/71s0lumKb-L._SL1500_.jpg',
     price: 45000,
@@ -32,6 +35,7 @@ export let myPurchases: Order[] = [
   },
   {
     id: '3',
+    bookId: '6',
     bookTitle: 'English Grammar in Use',
     bookImage: 'https://m.media-amazon.com/images/I/71KB-rEYSxL._SL1500_.jpg',
     price: 65000,
@@ -45,6 +49,7 @@ export let myPurchases: Order[] = [
 export let mySales: Order[] = [
   {
     id: '4',
+    bookId: '1',
     bookTitle: 'Introduction to Algorithms',
     bookImage: 'https://m.media-amazon.com/images/I/61ZFuVSiBSL._SL1500_.jpg',
     price: 120000,
@@ -55,6 +60,7 @@ export let mySales: Order[] = [
   },
   {
     id: '5',
+    bookId: '4',
     bookTitle: 'Head First Design Patterns',
     bookImage: 'https://m.media-amazon.com/images/I/61APhXCksuL._SL1500_.jpg',
     price: 95000,
@@ -65,6 +71,7 @@ export let mySales: Order[] = [
   },
   {
     id: '6',
+    bookId: '5',
     bookTitle: 'Marketing căn bản',
     bookImage: 'https://m.media-amazon.com/images/I/71wSMFCfKPL._SL1500_.jpg',
     price: 55000,

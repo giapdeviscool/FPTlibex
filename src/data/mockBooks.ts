@@ -20,7 +20,7 @@ export const categories = [
   { id: '6', name: 'Marketing', icon: 'megaphone' },
 ];
 
-export const mockBooks: Book[] = [
+export let mockBooks: Book[] = [
   {
     id: '1',
     title: 'Introduction to Algorithms',

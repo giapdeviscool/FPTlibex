@@ -11,6 +11,7 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
 import { myPurchases, mySales, Order } from '../data/mockOrders';
+import { mockBooks } from '../data/mockBooks';
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + ' F-Coin';
@@ -125,10 +126,22 @@ export default function OrderScreen() {
   const [sales, setSales] = useState(mySales);
 
   const handleAction = (orderId: string, newStatus: Order['status'], newLabel: string) => {
+    let orderToUpdate: Order | undefined;
+
     if (activeTab === 'purchases') {
+      orderToUpdate = purchases.find(o => o.id === orderId);
       setPurchases(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, statusLabel: newLabel } : o));
     } else {
+      orderToUpdate = sales.find(o => o.id === orderId);
       setSales(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, statusLabel: newLabel } : o));
+    }
+
+    // If marked as completed, remove from the mockBooks listing
+    if (newStatus === 'completed' && orderToUpdate?.bookId) {
+      const bookIndex = mockBooks.findIndex(b => b.id === orderToUpdate!.bookId);
+      if (bookIndex > -1) {
+        mockBooks.splice(bookIndex, 1);
+      }
     }
   };
 
