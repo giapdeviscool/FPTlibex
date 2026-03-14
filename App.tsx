@@ -1,32 +1,36 @@
 /**
- * Sample React Native App with Bottom Tab Navigation
- * https://github.com/facebook/react-native
- *
+ * FPTlibex - Buy & Sell Used Books at FPT
  * @format
  */
 
-import { StatusBar, StyleSheet, useColorScheme, View, Text } from 'react-native';
-import {
-  SafeAreaProvider,
-} from 'react-native-safe-area-context';
+import React from 'react';
+import { StyleSheet, View, Text } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import Icon from 'react-native-vector-icons/Ionicons';
+
+import HomeScreen from './src/screens/HomeScreen';
+import { Colors } from './src/theme/colors';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-// Tab Screens
-function HomeScreen() {
+// Placeholder screens
+function BookDetailScreen() {
   return (
     <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Home</Text>
+      <Text style={styles.screenTitle}>Chi tiết sách</Text>
     </View>
   );
 }
 
-function SearchScreen() {
+function ChatScreen() {
   return (
     <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Search</Text>
+      <Icon name="chatbubbles-outline" size={48} color={Colors.textMuted} />
+      <Text style={styles.screenTitle}>Tin nhắn</Text>
     </View>
   );
 }
@@ -34,7 +38,8 @@ function SearchScreen() {
 function AddScreen() {
   return (
     <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Add</Text>
+      <Icon name="add-circle-outline" size={48} color={Colors.textMuted} />
+      <Text style={styles.screenTitle}>Đăng bán</Text>
     </View>
   );
 }
@@ -42,7 +47,8 @@ function AddScreen() {
 function NotificationScreen() {
   return (
     <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Notifications</Text>
+      <Icon name="notifications-outline" size={48} color={Colors.textMuted} />
+      <Text style={styles.screenTitle}>Thông báo</Text>
     </View>
   );
 }
@@ -50,59 +56,95 @@ function NotificationScreen() {
 function ProfileScreen() {
   return (
     <View style={styles.screenContainer}>
-      <Text style={styles.screenTitle}>Profile</Text>
+      <Icon name="person-outline" size={48} color={Colors.textMuted} />
+      <Text style={styles.screenTitle}>Hồ sơ</Text>
     </View>
   );
 }
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+// Home Stack with Book Detail
+function HomeStack() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="HomeMain" component={HomeScreen} />
+      <Stack.Screen name="BookDetail" component={BookDetailScreen} />
+    </Stack.Navigator>
+  );
+}
 
+const tabIcons: Record<string, { active: string; inactive: string }> = {
+  Home: { active: 'home', inactive: 'home-outline' },
+  Chat: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
+  Add: { active: 'add-circle', inactive: 'add-circle-outline' },
+  Notifications: { active: 'notifications', inactive: 'notifications-outline' },
+  Profile: { active: 'person', inactive: 'person-outline' },
+};
+
+function App() {
   return (
     <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <NavigationContainer>
         <Tab.Navigator
-          screenOptions={{
+          screenOptions={({ route }) => ({
             headerShown: false,
-            tabBarActiveTintColor: '#007AFF',
-            tabBarInactiveTintColor: '#999',
-            tabBarLabelStyle: { fontSize: 12, marginTop: 0 },
-          }}>
+            tabBarActiveTintColor: Colors.primary,
+            tabBarInactiveTintColor: Colors.textMuted,
+            tabBarLabelStyle: {
+              fontSize: 11,
+              fontWeight: '600',
+              marginTop: -2,
+            },
+            tabBarStyle: {
+              backgroundColor: '#FFFFFF',
+              borderTopWidth: 0,
+              height: 85,
+              paddingTop: 8,
+              paddingBottom: 28,
+              shadowColor: 'rgba(0,0,0,0.08)',
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 1,
+              shadowRadius: 12,
+              elevation: 8,
+            },
+            tabBarIcon: ({ focused, color, size }) => {
+              const iconNames = tabIcons[route.name];
+              const iconName = focused ? iconNames.active : iconNames.inactive;
+
+              if (route.name === 'Add') {
+                return (
+                  <View style={styles.addButton}>
+                    <Icon name="add" size={28} color="#FFFFFF" />
+                  </View>
+                );
+              }
+
+              return <Icon name={iconName} size={22} color={color} />;
+            },
+          })}>
           <Tab.Screen
             name="Home"
-            component={HomeScreen}
-            options={{
-              tabBarLabel: 'Home',
-            }}
+            component={HomeStack}
+            options={{ tabBarLabel: 'Trang chủ' }}
           />
           <Tab.Screen
-            name="Search"
-            component={SearchScreen}
-            options={{
-              tabBarLabel: 'Search',
-            }}
+            name="Chat"
+            component={ChatScreen}
+            options={{ tabBarLabel: 'Tin nhắn' }}
           />
           <Tab.Screen
             name="Add"
             component={AddScreen}
-            options={{
-              tabBarLabel: 'Add',
-            }}
+            options={{ tabBarLabel: 'Đăng bán' }}
           />
           <Tab.Screen
             name="Notifications"
             component={NotificationScreen}
-            options={{
-              tabBarLabel: 'Notifications',
-            }}
+            options={{ tabBarLabel: 'Thông báo' }}
           />
           <Tab.Screen
             name="Profile"
             component={ProfileScreen}
-            options={{
-              tabBarLabel: 'Profile',
-            }}
+            options={{ tabBarLabel: 'Hồ sơ' }}
           />
         </Tab.Navigator>
       </NavigationContainer>
@@ -115,12 +157,27 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.background,
+    gap: 12,
   },
   screenTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  addButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: Colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -10,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 6,
   },
 });
 
