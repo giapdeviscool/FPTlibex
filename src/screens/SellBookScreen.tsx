@@ -15,6 +15,8 @@ import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { Colors } from '../theme/colors';
 import { createSellingBook } from '../service/book.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { uploadImage } from '../service/upload.service';
+import { ActivityIndicator } from 'react-native';
 
 const conditions = ['Như mới', 'Tốt', 'Khá', 'Cũ'];
 const faculties = ['CNTT', 'Kinh tế', 'Ngoại ngữ', 'Thiết kế', 'Marketing', 'Khác'];
@@ -31,6 +33,7 @@ export default function SellBookScreen({ navigation }: any) {
     faculty: null as 'CNTT' | 'Kinh tế' | 'Ngoại ngữ' | 'Thiết kế' | 'Marketing' | 'Khác' | null,
   });
   const [image, setImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const getSeller = async () => {
     const userInfo = await AsyncStorage.getItem('user_info');
@@ -61,36 +64,57 @@ export default function SellBookScreen({ navigation }: any) {
     String(formData.price).trim() &&
     formData.condition &&
     formData.faculty;
-
   const handlePost = async () => {
     if (!isFormValid) {
       Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ các trường bắt buộc');
       return;
     }
 
-    // Chuẩn bị dữ liệu gửi đi (sử dụng object thay vì FormData)
-    const uploadData = {
-      title: formData.title.trim(),
-      author: formData.author.trim(),
-      price: Number(formData.price),
-      originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
-      description: formData.description.trim(),
-      condition: formData.condition,
-      faculty: formData.faculty,
-      seller: formData.seller,
-      image: image, // uri ảnh
-    };
+    setIsUploading(true);
+    try {
+      console.log('--- Starting handlePost ---');
+      let remoteImageUrl = image;
 
-    // Logging giúp debug
-    console.log("Dữ liệu chuẩn bị gửi đi:", JSON.stringify(uploadData, null, 2));
-    const response = await createSellingBook(uploadData);
-    console.log("Response:", response);
+      // Nếu có chọn ảnh, upload lên server trước
+      if (image && !image.startsWith('http')) {
+        console.log('Uploading local image to server:', image);
+        const fileName = `book_${Date.now()}.jpg`;
+        const uploadResult: any = await uploadImage(image, fileName);
+        console.log('Upload result received:', uploadResult);
+        
+        // Handle different possible response structures
+        remoteImageUrl = uploadResult.imageUrl || uploadResult.url || uploadResult.data?.url || (typeof uploadResult === 'string' ? uploadResult : image);
+        console.log('Final URL to be saved:', remoteImageUrl);
+      }
 
-    Alert.alert(
-      'Đăng bán thành công! 🎉',
-      `"${formData.title}" đã được đăng với giá ${Number(formData.price).toLocaleString('vi-VN')}đ`,
-      [{ text: 'OK', onPress: () => navigation.goBack() }],
-    );
+      // Chuẩn bị dữ liệu gửi đi (sử dụng object thay vì FormData)
+      const uploadData = {
+        title: formData.title.trim(),
+        author: formData.author.trim(),
+        price: Number(formData.price),
+        originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
+        description: formData.description.trim(),
+        condition: formData.condition,
+        faculty: formData.faculty,
+        seller: formData.seller,
+        image: remoteImageUrl, // URL ảnh đã upload
+      };
+
+      console.log('Sending createSellingBook with data:', uploadData);
+      const response = await createSellingBook(uploadData);
+      console.log('Book created successfully:', response);
+
+      Alert.alert(
+        'Đăng bán thành công! 🎉',
+        `"${formData.title}" đã được đăng với giá ${Number(formData.price).toLocaleString('vi-VN')}đ`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }],
+      );
+    } catch (error) {
+      console.error('Error in handlePost process:', error);
+      Alert.alert('Lỗi', 'Không thể đăng bán sách. Vui lòng thử lại.');
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleAddImage = () => {
@@ -347,23 +371,29 @@ export default function SellBookScreen({ navigation }: any) {
           <Text style={styles.tipItem}>📝 Mô tả chi tiết tình trạng sách</Text>
         </View>
 
-        {/* Submit button (full width, below form) */}
         <TouchableOpacity
           style={[styles.submitButton, isFormValid && styles.submitButtonActive]}
           onPress={handlePost}
+          disabled={!isFormValid || isUploading}
           activeOpacity={0.8}>
-          <Icon
-            name="cloud-upload-outline"
-            size={20}
-            color={isFormValid ? '#FFFFFF' : Colors.textMuted}
-          />
-          <Text
-            style={[
-              styles.submitButtonText,
-              isFormValid && styles.submitButtonTextActive,
-            ]}>
-            Đăng bán ngay
-          </Text>
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Icon
+                name="cloud-upload-outline"
+                size={20}
+                color={isFormValid ? '#FFFFFF' : Colors.textMuted}
+              />
+              <Text
+                style={[
+                  styles.submitButtonText,
+                  isFormValid && styles.submitButtonTextActive,
+                ]}>
+                Đăng bán ngay
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
       </ScrollView>
     </View >

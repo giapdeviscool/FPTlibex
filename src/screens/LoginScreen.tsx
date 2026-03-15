@@ -20,17 +20,15 @@ export default function LoginScreen({ navigation }: any) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  
+
 
   const handleLogin = async () => {
     try {
       const response = await login({ studentId, password });
 
       if (response && response.token) {
-        // Save token to AsyncStorage
         await AsyncStorage.setItem('user_token', response.token);
-        
-        // If there's user info, we could save it too
+
         if (response.user) {
           await AsyncStorage.setItem('user_info', JSON.stringify(response.user));
         }

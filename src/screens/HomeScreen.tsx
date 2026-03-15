@@ -34,9 +34,11 @@ export default function HomeScreen({ navigation }: any) {
 
   const fetchBooks = async () => {
     const response = await getAllSellingBooks();
-    setBooks(response);
+    // Handle both { success: true, data: [...] } and direct array
+    setBooks(response?.data || response || []);
   };
   const filteredBooks = useMemo(() => {
+    if (!books || !Array.isArray(books)) return [];
     return books.filter(book => {
       const matchesCategory =
         selectedCategory === '1' ||

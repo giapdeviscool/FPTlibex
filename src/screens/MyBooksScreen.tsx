@@ -13,7 +13,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
 import type { Book } from '../data/mockBooks';
-import { BookResponse, getSellerBooks } from '../service/book.service';
+import { BookResponse, deleteSellingBook, getSellerBooks } from '../service/book.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + ' F-Coin';
@@ -81,7 +81,15 @@ export default function MyBooksScreen({ navigation }: any) {
       {
         text: 'Xoá',
         style: 'destructive',
-        onPress: () => setBooks(prev => prev.filter(b => b._id !== bookId)),
+        onPress: async () => {
+          const response = await deleteSellingBook(bookId)
+          if (!response) {
+            Alert.alert('Lỗi', 'Không thể xoá sách');
+            return;
+          }
+          Alert.alert('Xoá thành công', 'Sách đã được xoá');
+          fetchBooks();
+        },
       },
     ]);
   };
@@ -91,7 +99,7 @@ export default function MyBooksScreen({ navigation }: any) {
     if (!user_info) return;
     const user = JSON.parse(user_info);
     const response = await getSellerBooks(user.studentId);
-    setBooks(response);
+    setBooks(response.data);
   };
 
   useFocusEffect(

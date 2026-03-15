@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
   StatusBar,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
@@ -66,14 +67,33 @@ function ConversationItem({
         </View>
 
         <View style={styles.messageRow}>
-          <Text
-            style={[
-              styles.lastMessage,
-              hasUnread && styles.lastMessageUnread,
-            ]}
-            numberOfLines={1}>
-            {conversation.lastMessage}
-          </Text>
+          <View style={styles.lastMessageContainer}>
+            {conversation.lastMessageImage ? (
+              <View style={styles.lastMessageImagePreview}>
+                <Image
+                  source={{ uri: conversation.lastMessageImage }}
+                  style={styles.lastMessageThumbnail}
+                />
+                <Text
+                  style={[
+                    styles.lastMessage,
+                    hasUnread && styles.lastMessageUnread,
+                  ]}
+                  numberOfLines={1}>
+                  Hình ảnh
+                </Text>
+              </View>
+            ) : (
+              <Text
+                style={[
+                  styles.lastMessage,
+                  hasUnread && styles.lastMessageUnread,
+                ]}
+                numberOfLines={1}>
+                {conversation.lastMessage}
+              </Text>
+            )}
+          </View>
           {hasUnread && (
             <View style={styles.unreadBadge}>
               <Text style={styles.unreadText}>{conversation.unreadCount}</Text>
@@ -115,6 +135,7 @@ export default function ChatScreen({ navigation }: any) {
               bookTitle: r.bookTitle,
               bookPrice: r.bookPrice,
               lastMessage: r.lastMessage,
+              lastMessageImage: r.lastMessageImage, // Get image from response
               time: r.time,
               unreadCount: r.unreadCount || 0,
               isOnline: r.isOnline || false,
@@ -361,6 +382,21 @@ const styles = StyleSheet.create({
   lastMessageUnread: {
     color: Colors.text,
     fontWeight: '600',
+  },
+  lastMessageContainer: {
+    flex: 1,
+    marginRight: 8,
+  },
+  lastMessageImagePreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  lastMessageThumbnail: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    backgroundColor: Colors.borderLight,
   },
   unreadBadge: {
     minWidth: 22,

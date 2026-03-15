@@ -24,8 +24,7 @@ export interface BookResponse {
 
 export const createSellingBook = async (bookData: any) => {
     try {
-        const response = await axiosClient.post(BOOK_API.SELLING_BOOK, bookData);
-        return response.data;
+        return await axiosClient.post(BOOK_API.SELLING_BOOK, bookData);
     } catch (error) {
         throw error;
     }
@@ -33,8 +32,7 @@ export const createSellingBook = async (bookData: any) => {
 
 export const getAllSellingBooks = async () => {
     try {
-        const response = await axiosClient.get<BookResponse[]>(BOOK_API.SELLING_BOOK);
-        return response.data;
+        return await axiosClient.get<BookResponse[]>(BOOK_API.SELLING_BOOK);
     } catch (error) {
         throw error;
     }
@@ -42,8 +40,7 @@ export const getAllSellingBooks = async () => {
 
 export const getSellerBooks = async (studentId: string) => {
     try {
-        const response = await axiosClient.get<BookResponse[]>(`${BOOK_API.SELLING_BOOK}/seller/${studentId}`);
-        return response.data;
+        return await axiosClient.get<BookResponse[]>(`${BOOK_API.SELLING_BOOK}/seller/${studentId}`);
     } catch (error) {
         throw error;
     }
@@ -51,8 +48,7 @@ export const getSellerBooks = async (studentId: string) => {
 
 export const deleteSellingBook = async (bookId: string) => {
     try {
-        const response = await axiosClient.delete(`${BOOK_API.SELLING_BOOK}/${bookId}`);
-        return response.data;
+        return await axiosClient.delete(`${BOOK_API.SELLING_BOOK}/${bookId}`);
     } catch (error) {
         throw error;
     }
@@ -60,8 +56,7 @@ export const deleteSellingBook = async (bookId: string) => {
 
 export const updateSellingBook = async (bookId: string, bookData: any) => {
     try {
-        const response = await axiosClient.put(`${BOOK_API.SELLING_BOOK}/${bookId}`, bookData);
-        return response.data;
+        return await axiosClient.put(`${BOOK_API.SELLING_BOOK}/${bookId}`, bookData);
     } catch (error) {
         throw error;
     }

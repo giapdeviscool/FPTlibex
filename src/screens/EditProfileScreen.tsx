@@ -12,6 +12,9 @@ import {
   Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import { uploadImage } from '../service/upload.service';
+import { ActivityIndicator, Image } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../theme/colors';
 import { updateProfile } from '../service/user.service';
@@ -19,7 +22,9 @@ import { updateProfile } from '../service/user.service';
 export default function EditProfileScreen({ navigation }: any) {
   const [name, setName] = useState('');
   const [studentId, setStudentId] = useState('');
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -28,6 +33,7 @@ export default function EditProfileScreen({ navigation }: any) {
         const user = JSON.parse(userInfo);
         setName(user.name || '');
         setStudentId(user.studentId || '');
+        setAvatar(user.avatar || user.image || null);
       }
     };
     loadUserData();
@@ -41,13 +47,24 @@ export default function EditProfileScreen({ navigation }: any) {
 
     setLoading(true);
     try {
-      const response = await updateProfile({ name });
+      let avatarUrl = avatar;
+
+      // Upload if it's a new local image
+      if (avatar && !avatar.startsWith('http')) {
+        setIsUploading(true);
+        const fileName = `avatar_${Date.now()}.jpg`;
+        const uploadResult: any = await uploadImage(avatar, fileName);
+        avatarUrl = uploadResult.imageUrl || uploadResult.url || uploadResult.data?.url || (typeof uploadResult === 'string' ? uploadResult : avatar);
+        setIsUploading(false);
+      }
+
+      await updateProfile({ name, avatar: avatarUrl, studentId });
 
       // Update local storage
       const userInfo = await AsyncStorage.getItem('user_info');
       if (userInfo) {
         const user = JSON.parse(userInfo);
-        const updatedUser = { ...user, name };
+        const updatedUser = { ...user, name, avatar: avatarUrl, studentId };
         await AsyncStorage.setItem('user_info', JSON.stringify(updatedUser));
       }
 
@@ -61,7 +78,28 @@ export default function EditProfileScreen({ navigation }: any) {
       );
     } finally {
       setLoading(false);
+      setIsUploading(false);
     }
+  };
+
+  const handlePickImage = () => {
+    Alert.alert('Ảnh đại diện', 'Chọn nguồn ảnh', [
+      {
+        text: 'Chụp ảnh',
+        onPress: async () => {
+          const result = await launchCamera({ mediaType: 'photo', quality: 0.7 });
+          if (result.assets?.[0]?.uri) setAvatar(result.assets[0].uri);
+        }
+      },
+      {
+        text: 'Thư viện ảnh',
+        onPress: async () => {
+          const result = await launchImageLibrary({ mediaType: 'photo', quality: 0.7 });
+          if (result.assets?.[0]?.uri) setAvatar(result.assets[0].uri);
+        }
+      },
+      { text: 'Huỷ', style: 'cancel' }
+    ]);
   };
 
   return (
@@ -85,6 +123,27 @@ export default function EditProfileScreen({ navigation }: any) {
         style={{ flex: 1 }}
       >
         <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarWrapper}>
+              {avatar ? (
+                <Image source={{ uri: avatar }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, styles.placeholderAvatar]}>
+                  <Icon name="person" size={60} color={Colors.textMuted} />
+                </View>
+              )}
+              {isUploading && (
+                <View style={styles.uploadOverlay}>
+                  <ActivityIndicator color="#FFF" />
+                </View>
+              )}
+              <TouchableOpacity style={styles.editAvatarBtn} onPress={handlePickImage}>
+                <Icon name="camera" size={20} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.avatarHelpText}>Chạm để đổi ảnh đại diện</Text>
+          </View>
+
           <View style={styles.form}>
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Họ và tên</Text>
@@ -158,6 +217,58 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  avatarSection: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  avatarWrapper: {
+    position: 'relative',
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.surface,
+    shadowColor: Colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 10,
+    elevation: 4,
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 60,
+  },
+  placeholderAvatar: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Colors.borderLight,
+  },
+  uploadOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editAvatarBtn: {
+    position: 'absolute',
+    right: 0,
+    bottom: 0,
+    backgroundColor: Colors.primary,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: Colors.surface,
+  },
+  avatarHelpText: {
+    marginTop: 10,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    fontWeight: '500',
   },
   form: {
     gap: 20,

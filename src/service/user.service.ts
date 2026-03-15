@@ -2,8 +2,7 @@ import axiosClient from "../utils/axios.client";
 
 export const updateProfile = async (userData: any) => {
     try {
-        const response = await axiosClient.put('/users/profile', userData);
-        return response.data;
+        return await axiosClient.put('/users/profile', userData);
     } catch (error) {
         throw error;
     }
@@ -11,8 +10,7 @@ export const updateProfile = async (userData: any) => {
 
 export const getProfile = async () => {
     try {
-        const response = await axiosClient.get('/users/profile');
-        return response.data;
+        return await axiosClient.get('/users/profile');
     } catch (error) {
         throw error;
     }
@@ -20,8 +18,7 @@ export const getProfile = async () => {
 
 export const getAllUsers = async () => {
     try {
-        const response = await axiosClient.get('/users');
-        return response.data;
+        return await axiosClient.get('/users');
     } catch (error) {
         throw error;
     }

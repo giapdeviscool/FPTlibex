@@ -46,7 +46,7 @@ const menuItems = [
 ];
 
 export default function ProfileScreen({ navigation }: any) {
-  const [user, setUser] = React.useState<any>(null);
+  const [user, setUser] = React.useState<any>('');
 
   const loadUser = async () => {
     const userInfo = await AsyncStorage.getItem('user_info');
@@ -83,9 +83,6 @@ export default function ProfileScreen({ navigation }: any) {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Hồ sơ</Text>
-        <TouchableOpacity style={styles.settingsBtn}>
-          <Icon name="settings-outline" size={24} color={Colors.text} />
-        </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -93,7 +90,7 @@ export default function ProfileScreen({ navigation }: any) {
         <View style={styles.userCard}>
           <View style={styles.avatarContainer}>
             <Image
-              source={{ uri: 'https://i.pravatar.cc/150?img=68' }}
+              source={{ uri: user?.avatar || '' }}
               style={styles.avatar}
             />
             <View style={styles.verifiedBadge}>
@@ -102,7 +99,7 @@ export default function ProfileScreen({ navigation }: any) {
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user?.name || 'Nguyễn Văn A'}</Text>
-            <Text style={styles.userEmail}>{user?.studentId || 'SE172344'} • K17</Text>
+            <Text style={styles.userEmail}>{user?.studentId || 'SE172344'}</Text>
             <View style={styles.tag}>
               <Text style={styles.tagText}>Sinh viên FPTU HN</Text>
             </View>

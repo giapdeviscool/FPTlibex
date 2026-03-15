@@ -10,14 +10,18 @@ import {
   Platform,
   StatusBar,
   Alert,
+  Image,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { Colors } from '../theme/colors';
-import { mockMessages, Message } from '../data/mockMessages';
+import { Message } from '../data/mockMessages';
 import SocketService from '../service/socket.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMessages, sendMessageApi } from '../service/chat.service';
+import { getMessages } from '../service/chat.service';
+import { uploadImage } from '../service/upload.service';
+import { ActivityIndicator } from 'react-native';
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + ' F-Coin';
@@ -34,18 +38,25 @@ function MessageBubble({ message }: { message: Message }) {
         style={[
           styles.bubble,
           message.isMe ? styles.bubbleMe : styles.bubbleOther,
+          message.image ? styles.imageBubble : {},
         ]}>
-        <Text
-          style={[
-            styles.bubbleText,
-            message.isMe ? styles.bubbleTextMe : styles.bubbleTextOther,
-          ]}>
-          {message.text}
-        </Text>
+        {message.image && (
+          <Image source={{ uri: message.image }} style={styles.bubbleImage} />
+        )}
+        {message.text ? (
+          <Text
+            style={[
+              styles.bubbleText,
+              message.isMe ? styles.bubbleTextMe : styles.bubbleTextOther,
+            ]}>
+            {message.text}
+          </Text>
+        ) : null}
         <Text
           style={[
             styles.bubbleTime,
             message.isMe ? styles.bubbleTimeMe : styles.bubbleTimeOther,
+            message.image ? styles.imageBubbleTime : {},
           ]}>
           {message.time}
         </Text>
@@ -58,13 +69,12 @@ export default function ChatDetailScreen({ route, navigation }: any) {
   const { conversationId, userName, bookTitle, bookPrice, isOnline } =
     route.params;
 
-  const [messages, setMessages] = useState<Message[]>(
-    mockMessages[conversationId] || [],
-  );
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState('');
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
-
   useFocusEffect(
     React.useCallback(() => {
       const setupSocket = async () => {
@@ -94,6 +104,7 @@ export default function ChatDetailScreen({ route, navigation }: any) {
                   hour: '2-digit',
                   minute: '2-digit',
                 }),
+                image: m.image,
               }));
               setMessages(formattedMessages);
             }
@@ -111,6 +122,7 @@ export default function ChatDetailScreen({ route, navigation }: any) {
                 hour: '2-digit',
                 minute: '2-digit',
               }),
+              image: data.image,
             };
 
             setMessages(prev => {
@@ -150,43 +162,123 @@ export default function ChatDetailScreen({ route, navigation }: any) {
     }, [conversationId])
   );
 
-  const handleSend = async () => {
-    if (!inputText.trim() || !currentUser) return;
+  const handleAttachImage = () => {
+    Alert.alert('Gửi ảnh', 'Chọn nguồn ảnh', [
+      {
+        text: 'Chụp ảnh',
+        onPress: async () => {
+          try {
+            const response = await launchCamera({
+              mediaType: 'photo',
+              quality: 0.8,
+            });
+            if (response.assets && response.assets[0]?.uri) {
+              setSelectedImage(response.assets[0].uri);
+            }
+          } catch (e) {
+            console.log('Camera error:', e);
+          }
+        },
+      },
+      {
+        text: 'Thư viện ảnh',
+        onPress: async () => {
+          try {
+            const response = await launchImageLibrary({
+              mediaType: 'photo',
+              quality: 0.8,
+              selectionLimit: 1,
+            });
+            if (response.assets && response.assets[0]?.uri) {
+              setSelectedImage(response.assets[0].uri);
+            }
+          } catch (e) {
+            console.log('Library error:', e);
+          }
+        },
+      },
+      { text: 'Huỷ', style: 'cancel' },
+    ]);
+  };
 
-    const messageData = {
-      conversationId: conversationId,
-      senderId: currentUser._id,
-      text: inputText.trim(),
-    };
+  const handleSend = async () => {
+    if ((!inputText.trim() && !selectedImage) || !currentUser) return;
+
+    const currentText = inputText.trim();
+    const currentImage = selectedImage;
+
+    // Clear state early to prevent double send
+    setInputText('');
+    setSelectedImage(null);
+    setIsUploading(true);
 
     try {
-      // 1. Optimistic Update (Show message immediately)
-      const optimisticMessage: Message = {
-        id: 'temp-' + Date.now(),
-        text: inputText.trim(),
-        isMe: true,
-        time: new Date().toLocaleTimeString('vi-VN', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-      };
-      setMessages(prev => [...prev, optimisticMessage]);
+      // 1. Handle Image Message if exists
+      if (currentImage) {
+        // Upload image to backend first
+        const fileName = `chat_${Date.now()}.jpg`;
+        const uploadResult = await uploadImage(currentImage, fileName);
 
-      // 2. Emit via socket
-      SocketService.sendMessage(messageData);
+        const remoteImageUrl = uploadResult.imageUrl;
 
-      // 3. Clear input
-      setInputText('');
+        const imageMessageData = {
+          conversationId: conversationId,
+          senderId: currentUser._id,
+          image: remoteImageUrl, // Send the URL returned from backend
+          text: '', // Empty text for image message
+        };
+
+        const optimisticImageMessage: Message = {
+          id: 'temp-img-' + Date.now(),
+          text: '',
+          image: remoteImageUrl,
+          isMe: true,
+          time: new Date().toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        };
+        setMessages(prev => [...prev, optimisticImageMessage]);
+        SocketService.sendMessage(imageMessageData);
+      }
+
+      // 2. Handle Text Message if exists
+      if (currentText) {
+        // Slight delay if there was an image to preserve order (optional but better)
+        if (currentImage) {
+          await new Promise<void>(resolve => setTimeout(resolve, 100));
+        }
+
+        const textMessageData = {
+          conversationId: conversationId,
+          senderId: currentUser._id,
+          text: currentText,
+        };
+
+        const optimisticTextMessage: Message = {
+          id: 'temp-txt-' + Date.now(),
+          text: currentText,
+          isMe: true,
+          time: new Date().toLocaleTimeString('vi-VN', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+        };
+        setMessages(prev => [...prev, optimisticTextMessage]);
+        SocketService.sendMessage(textMessageData);
+      }
 
       // Scroll to end
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 100);
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error in handleSend:', error);
+      Alert.alert('Lỗi', 'Không thể gửi tin nhắn. Vui lòng thử lại.');
+    } finally {
+      setIsUploading(false);
     }
   };
-  console.log(messages)
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -258,10 +350,24 @@ export default function ChatDetailScreen({ route, navigation }: any) {
         }
       />
 
+      {/* Image Preview */}
+      {selectedImage && (
+        <View style={styles.imagePreviewContainer}>
+          <View style={styles.imagePreviewWrapper}>
+            <Image source={{ uri: selectedImage }} style={styles.imagePreview} />
+            <TouchableOpacity
+              style={styles.removeImageButton}
+              onPress={() => setSelectedImage(null)}>
+              <Icon name="close-circle" size={24} color={Colors.surface} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       {/* Input */}
       <View style={styles.inputContainer}>
-        <TouchableOpacity style={styles.attachButton}>
-          <Icon name="add-circle-outline" size={26} color={Colors.primary} />
+        <TouchableOpacity style={styles.attachButton} onPress={handleAttachImage}>
+          <Icon name="add" size={26} color={Colors.primary} />
         </TouchableOpacity>
 
         <View style={styles.inputWrapper}>
@@ -286,15 +392,25 @@ export default function ChatDetailScreen({ route, navigation }: any) {
         <TouchableOpacity
           style={[
             styles.sendButton,
-            inputText.trim() ? styles.sendButtonActive : {},
+            (inputText.trim() || selectedImage) ? styles.sendButtonActive : {},
           ]}
           onPress={handleSend}
-          disabled={!inputText.trim()}>
-          <Icon
-            name="send"
-            size={18}
-            color={inputText.trim() ? '#FFFFFF' : Colors.textMuted}
-          />
+          disabled={!inputText.trim() && !selectedImage}>
+          {(inputText.trim() || selectedImage) && !isUploading ? (
+            <Icon
+              name="send"
+              size={18}
+              color="#FFFFFF"
+            />
+          ) : isUploading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Icon
+              name="send"
+              size={18}
+              color={Colors.textMuted}
+            />
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -501,5 +617,51 @@ const styles = StyleSheet.create({
   },
   sendButtonActive: {
     backgroundColor: Colors.primary,
+  },
+  imageBubble: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  bubbleImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 12,
+  },
+  imageBubbleTime: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    color: '#FFFFFF',
+    marginTop: 0,
+  },
+  imagePreviewContainer: {
+    padding: 10,
+    backgroundColor: Colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: Colors.borderLight,
+  },
+  imagePreviewWrapper: {
+    width: 80,
+    height: 80,
+    borderRadius: 12,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  imagePreview: {
+    width: '100%',
+    height: '100%',
+  },
+  removeImageButton: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    borderRadius: 12,
   },
 });
