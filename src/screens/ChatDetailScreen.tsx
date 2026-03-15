@@ -9,10 +9,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
 import { mockMessages, Message } from '../data/mockMessages';
+import SocketService from '../service/socket.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
+import { getMessages, sendMessageApi } from '../service/chat.service';
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + ' F-Coin';
@@ -57,29 +62,131 @@ export default function ChatDetailScreen({ route, navigation }: any) {
     mockMessages[conversationId] || [],
   );
   const [inputText, setInputText] = useState('');
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
+  useFocusEffect(
+    React.useCallback(() => {
+      const setupSocket = async () => {
+        const token = await AsyncStorage.getItem('user_token');
+        const userInfoStr = await AsyncStorage.getItem('user_info');
 
-    const newMessage: Message = {
-      id: String(messages.length + 1),
+        if (token && userInfoStr) {
+          const userInfo = JSON.parse(userInfoStr);
+          setCurrentUser(userInfo);
+          // Connect and join room
+          SocketService.connect(token);
+          SocketService.joinRoom(conversationId);
+
+          // Fetch message history
+          try {
+            const response: any = await getMessages(conversationId);
+            console.log('Messages history response:', response);
+
+            // Handle both wrapped { success: true, data: [...] } and direct array
+            const history = response?.data || response;
+            if (history && Array.isArray(history)) {
+              const formattedMessages = history.map((m: any) => ({
+                id: m._id,
+                text: m.content, // Map content to text
+                isMe: m.sender?._id === userInfo._id, // Identify if I am the sender
+                time: new Date(m.createdAt).toLocaleTimeString('vi-VN', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              }));
+              setMessages(formattedMessages);
+            }
+          } catch (error) {
+            console.error('Error fetching messages:', error);
+          }
+
+          // Listen for incoming messages
+          SocketService.socket?.on('receive_message', (data: any) => {
+            const incomingMessage: Message = {
+              id: data._id || String(Date.now()),
+              text: data.content, // Map content to text
+              isMe: (data.sender?._id || data.senderId) === userInfo._id,
+              time: new Date(data.createdAt || Date.now()).toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+            };
+
+            setMessages(prev => {
+              // Check if message already exists (from optimistic update or previous fetch)
+              if (prev.some(m => m.id === incomingMessage.id || (m.text === incomingMessage.text && m.isMe === incomingMessage.isMe && m.id.startsWith('temp-')))) {
+                // If it was an optimistic temp message, replace it or just ignore the incoming if we prefer
+                return prev.map(m => (m.text === incomingMessage.text && m.id.startsWith('temp-')) ? incomingMessage : m);
+              }
+              return [...prev, incomingMessage];
+            });
+
+            setTimeout(() => {
+              flatListRef.current?.scrollToEnd({ animated: true });
+            }, 100);
+          });
+
+          // Listen for successful send feedback
+          SocketService.socket?.on('message_sent', (data: any) => {
+            console.log('Message sent confirmed:', data);
+          });
+
+          // Listen for errors
+          SocketService.socket?.on('message_error', (data: any) => {
+            Alert.alert('Lỗi gửi tin nhắn', data.message || 'Đã có lỗi xảy ra');
+          });
+        }
+      };
+
+      setupSocket();
+
+      return () => {
+        SocketService.leaveRoom(conversationId);
+        SocketService.socket?.off('receive_message');
+        SocketService.socket?.off('message_sent');
+        SocketService.socket?.off('message_error');
+      };
+    }, [conversationId])
+  );
+
+  const handleSend = async () => {
+    if (!inputText.trim() || !currentUser) return;
+
+    const messageData = {
+      conversationId: conversationId,
+      senderId: currentUser._id,
       text: inputText.trim(),
-      isMe: true,
-      time: new Date().toLocaleTimeString('vi-VN', {
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
     };
 
-    setMessages(prev => [...prev, newMessage]);
-    setInputText('');
+    try {
+      // 1. Optimistic Update (Show message immediately)
+      const optimisticMessage: Message = {
+        id: 'temp-' + Date.now(),
+        text: inputText.trim(),
+        isMe: true,
+        time: new Date().toLocaleTimeString('vi-VN', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
+      };
+      setMessages(prev => [...prev, optimisticMessage]);
 
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+      // 2. Emit via socket
+      SocketService.sendMessage(messageData);
+
+      // 3. Clear input
+      setInputText('');
+
+      // Scroll to end
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
-
+  console.log(messages)
   return (
     <KeyboardAvoidingView
       style={styles.container}

@@ -46,7 +46,7 @@ export default function DepositScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -59,7 +59,7 @@ export default function DepositScreen({ navigation }: any) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Current Balance Card */}
         <View style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
@@ -147,7 +147,7 @@ export default function DepositScreen({ navigation }: any) {
           </Text>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.payBtn}
           onPress={handleDeposit}
           activeOpacity={0.8}

@@ -7,11 +7,14 @@ import {
   TouchableOpacity,
   Image,
   StatusBar,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../theme/colors';
-import { myPurchases, mySales, Order } from '../data/mockOrders';
-import { mockBooks } from '../data/mockBooks';
+import { Order } from '../data/mockOrders';
+import { getOrdersByUserId, updateOrderStatus } from '../service/order.service';
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + ' F-Coin';
@@ -47,12 +50,12 @@ const statusIcon = (status: Order['status']) => {
   }
 };
 
-function OrderItem({ 
-  order, 
-  isSeller, 
-  onAction 
-}: { 
-  order: Order; 
+function OrderItem({
+  order,
+  isSeller,
+  onAction
+}: {
+  order: Order;
   isSeller: boolean;
   onAction: (orderId: string, newStatus: Order['status'], newLabel: string) => void;
 }) {
@@ -84,12 +87,12 @@ function OrderItem({
       {/* Action Buttons based on status & role */}
       {isSeller && order.status === 'pending' && (
         <View style={styles.actionRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnOutline]}
             onPress={() => onAction(order.id, 'cancelled', 'Đã huỷ')}>
             <Text style={styles.actionBtnTextOutline}>Từ chối</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnPrimary]}
             onPress={() => onAction(order.id, 'confirmed', 'Đã xác nhận')}>
             <Text style={styles.actionBtnTextPrimary}>Xác nhận đơn</Text>
@@ -99,7 +102,7 @@ function OrderItem({
 
       {isSeller && order.status === 'confirmed' && (
         <View style={styles.actionRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnPrimary]}
             onPress={() => onAction(order.id, 'shipping', 'Đang giao')}>
             <Text style={styles.actionBtnTextPrimary}>Đã giao sách</Text>
@@ -109,7 +112,7 @@ function OrderItem({
 
       {!isSeller && order.status === 'shipping' && (
         <View style={styles.actionRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionBtn, styles.actionBtnSuccess]}
             onPress={() => onAction(order.id, 'completed', 'Hoàn thành')}>
             <Text style={styles.actionBtnTextPrimary}>Đã nhận được sách</Text>
@@ -122,26 +125,73 @@ function OrderItem({
 
 export default function OrderScreen() {
   const [activeTab, setActiveTab] = useState<'purchases' | 'sales'>('purchases');
-  const [purchases, setPurchases] = useState(myPurchases);
-  const [sales, setSales] = useState(mySales);
+  const [purchases, setPurchases] = useState<Order[]>([]);
+  const [sales, setSales] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  const handleAction = (orderId: string, newStatus: Order['status'], newLabel: string) => {
-    let orderToUpdate: Order | undefined;
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const userInfo = await AsyncStorage.getItem('user_info');
+      if (!userInfo) return;
 
-    if (activeTab === 'purchases') {
-      orderToUpdate = purchases.find(o => o.id === orderId);
-      setPurchases(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, statusLabel: newLabel } : o));
-    } else {
-      orderToUpdate = sales.find(o => o.id === orderId);
-      setSales(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, statusLabel: newLabel } : o));
+      const user = JSON.parse(userInfo);
+      const response = await getOrdersByUserId(user.studentId);
+
+      // The backend response is an array of orders.
+      // We need to map them to our Order interface.
+      // Note: Assuming the backend returns populated book and user objects or enough info to map.
+      // If the backend returns raw IDs, we'd need more logic here.
+
+      const allOrders: Order[] = response.map((item: any) => ({
+        id: item._id,
+        bookId: item.book?._id || item.book,
+        bookTitle: item.book?.title || 'Sách không còn tồn tại',
+        bookImage: item.book?.image || '',
+        price: item.book?.price || 0,
+        status: item.status,
+        statusLabel: item.statusLabel,
+        // If the current user is the buyer, the "other user" is the seller.
+        otherUser: item.buyer?.studentId === user.studentId
+          ? (item.seller?.name || item.seller)
+          : (item.buyer?.name || item.buyer),
+        date: new Date(item.createdAt).toLocaleDateString('vi-VN'),
+        isBuyer: item.buyer?.studentId === user.studentId
+      }));
+
+      setPurchases(allOrders.filter((o: any) => o.isBuyer));
+      setSales(allOrders.filter((o: any) => !o.isBuyer));
+    } catch (error) {
+      console.error('Fetch Orders Error:', error);
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // If marked as completed, remove from the mockBooks listing
-    if (newStatus === 'completed' && orderToUpdate?.bookId) {
-      const bookIndex = mockBooks.findIndex(b => b.id === orderToUpdate!.bookId);
-      if (bookIndex > -1) {
-        mockBooks.splice(bookIndex, 1);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchOrders();
+    }, [])
+  );
+
+  const handleAction = async (orderId: string, newStatus: Order['status'], newLabel: string) => {
+    try {
+      await updateOrderStatus(orderId, newStatus, newLabel);
+
+      // Update local state after successful API call
+      if (activeTab === 'purchases') {
+        setPurchases(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, statusLabel: newLabel } : o));
+      } else {
+        setSales(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus, statusLabel: newLabel } : o));
       }
+
+      Alert.alert('Thành công', 'Trạng thái đơn hàng đã được cập nhật');
+    } catch (error: any) {
+      console.error('Update Order Status Error:', error);
+      Alert.alert(
+        'Lỗi',
+        error.response?.data?.message || 'Không thể cập nhật trạng thái đơn hàng'
+      );
     }
   };
 
@@ -204,10 +254,10 @@ export default function OrderScreen() {
         data={orders}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <OrderItem 
-            order={item} 
-            isSeller={activeTab === 'sales'} 
-            onAction={handleAction} 
+          <OrderItem
+            order={item}
+            isSeller={activeTab === 'sales'}
+            onAction={handleAction}
           />
         )}
         contentContainerStyle={styles.listContent}

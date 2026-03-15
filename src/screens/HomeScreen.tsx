@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -11,24 +11,42 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
-import { mockBooks, categories } from '../data/mockBooks';
+import { mockBooks, categories, Book } from '../data/mockBooks';
 import BookCard from '../components/BookCard';
+import { useFocusEffect } from '@react-navigation/native';
+import { getAllSellingBooks } from '../service/book.service';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }: any) {
   const [selectedCategory, setSelectedCategory] = useState('1');
   const [searchText, setSearchText] = useState('');
+  const [books, setBooks] = useState<Book[]>([]);
 
-  const filteredBooks = mockBooks.filter(book => {
-    const matchesCategory =
-      selectedCategory === '1' ||
-      categories.find(c => c.id === selectedCategory)?.name === book.faculty;
-    const matchesSearch =
-      !searchText ||
-      book.title.toLowerCase().includes(searchText.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  useFocusEffect(
+    useCallback(() => {
+      fetchBooks();
+      return () => {
+        setBooks([]);
+      }
+    }, [])
+  );
+
+  const fetchBooks = async () => {
+    const response = await getAllSellingBooks();
+    setBooks(response);
+  };
+  const filteredBooks = useMemo(() => {
+    return books.filter(book => {
+      const matchesCategory =
+        selectedCategory === '1' ||
+        categories.find(c => c.id === selectedCategory)?.name === book.faculty;
+      const matchesSearch =
+        !searchText ||
+        book.title.toLowerCase().includes(searchText.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [books, selectedCategory, searchText]);
 
   const getCategoryIcon = (iconName: string) => {
     const iconMap: Record<string, string> = {
@@ -185,9 +203,12 @@ export default function HomeScreen({ navigation }: any) {
         <View style={styles.booksGrid}>
           {filteredBooks.map(book => (
             <BookCard
-              key={book.id}
+              key={book._id}
               book={book}
-              onPress={() => navigation.navigate('BookDetail', { bookId: book.id })}
+              onPress={() => {
+                const specificBook = books.find(b => b._id === book._id);
+                navigation.navigate('BookDetail', specificBook)
+              }}
             />
           ))}
           {filteredBooks.length === 0 && (

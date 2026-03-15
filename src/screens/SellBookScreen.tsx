@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,50 +9,91 @@ import {
   StatusBar,
   Alert,
   Image,
-  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { Colors } from '../theme/colors';
+import { createSellingBook } from '../service/book.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const conditions = ['Như mới', 'Tốt', 'Khá', 'Cũ'] as const;
-const faculties = ['CNTT', 'Kinh tế', 'Ngoại ngữ', 'Thiết kế', 'Marketing', 'Khác'] as const;
+const conditions = ['Như mới', 'Tốt', 'Khá', 'Cũ'];
+const faculties = ['CNTT', 'Kinh tế', 'Ngoại ngữ', 'Thiết kế', 'Marketing', 'Khác'];
 
 export default function SellBookScreen({ navigation }: any) {
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [price, setPrice] = useState('');
-  const [originalPrice, setOriginalPrice] = useState('');
-  const [description, setDescription] = useState('');
-  const [selectedCondition, setSelectedCondition] = useState<string | null>(null);
-  const [selectedFaculty, setSelectedFaculty] = useState<string | null>(null);
-  const [images, setImages] = useState<string[]>([]);
+  const [formData, setFormData] = useState({
+    title: '',
+    author: '',
+    price: '',
+    originalPrice: '',
+    description: '',
+    seller: '',
+    condition: null as 'Như mới' | 'Tốt' | 'Khá' | 'Cũ' | null,
+    faculty: null as 'CNTT' | 'Kinh tế' | 'Ngoại ngữ' | 'Thiết kế' | 'Marketing' | 'Khác' | null,
+  });
+  const [image, setImage] = useState<string | null>(null);
+
+  const getSeller = async () => {
+    const userInfo = await AsyncStorage.getItem('user_info');
+    if (userInfo) {
+      const user = JSON.parse(userInfo);
+      setFormData(prev => ({
+        ...prev,
+        seller: user.studentId,
+      }));
+    }
+  };
+
+  useEffect(() => {
+    getSeller();
+  }, []);
+
+
+  const handleChange = (name: string, value: string | null) => {
+    setFormData(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
 
   const isFormValid =
-    title.trim() &&
-    author.trim() &&
-    price.trim() &&
-    selectedCondition &&
-    selectedFaculty;
+    formData.title.trim() &&
+    formData.author.trim() &&
+    String(formData.price).trim() &&
+    formData.condition &&
+    formData.faculty;
 
-  const handlePost = () => {
+  const handlePost = async () => {
     if (!isFormValid) {
       Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ các trường bắt buộc');
       return;
     }
+
+    // Chuẩn bị dữ liệu gửi đi (sử dụng object thay vì FormData)
+    const uploadData = {
+      title: formData.title.trim(),
+      author: formData.author.trim(),
+      price: Number(formData.price),
+      originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
+      description: formData.description.trim(),
+      condition: formData.condition,
+      faculty: formData.faculty,
+      seller: formData.seller,
+      image: image, // uri ảnh
+    };
+
+    // Logging giúp debug
+    console.log("Dữ liệu chuẩn bị gửi đi:", JSON.stringify(uploadData, null, 2));
+    const response = await createSellingBook(uploadData);
+    console.log("Response:", response);
+
     Alert.alert(
       'Đăng bán thành công! 🎉',
-      `"${title}" đã được đăng với giá ${Number(price).toLocaleString('vi-VN')}đ`,
+      `"${formData.title}" đã được đăng với giá ${Number(formData.price).toLocaleString('vi-VN')}đ`,
       [{ text: 'OK', onPress: () => navigation.goBack() }],
     );
   };
 
   const handleAddImage = () => {
-    if (images.length >= 5) {
-      Alert.alert('Tối đa 5 ảnh', 'Bạn đã thêm đủ 5 ảnh rồi');
-      return;
-    }
-
     Alert.alert('Thêm ảnh', 'Chọn nguồn ảnh', [
       {
         text: 'Chụp ảnh',
@@ -63,7 +104,7 @@ export default function SellBookScreen({ navigation }: any) {
               quality: 0.8,
             });
             if (response.assets && response.assets[0]?.uri) {
-              setImages(prev => [...prev, response.assets![0].uri!]);
+              setImage(response.assets[0].uri!);
             }
           } catch (e) {
             console.log('Camera error:', e);
@@ -77,13 +118,10 @@ export default function SellBookScreen({ navigation }: any) {
             const response = await launchImageLibrary({
               mediaType: 'photo',
               quality: 0.8,
-              selectionLimit: 5 - images.length,
+              selectionLimit: 1,
             });
-            if (response.assets) {
-              const uris = response.assets
-                .map(a => a.uri)
-                .filter((uri): uri is string => !!uri);
-              setImages(prev => [...prev, ...uris].slice(0, 5));
+            if (response.assets && response.assets[0]?.uri) {
+              setImage(response.assets[0].uri!);
             }
           } catch (e) {
             console.log('Library error:', e);
@@ -95,10 +133,10 @@ export default function SellBookScreen({ navigation }: any) {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} >
       <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
       {/* Header */}
-      <View style={styles.header}>
+      <View style={styles.header} >
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}>
@@ -117,7 +155,7 @@ export default function SellBookScreen({ navigation }: any) {
             Đăng
           </Text>
         </TouchableOpacity>
-      </View>
+      </View >
 
       <ScrollView
         style={styles.body}
@@ -127,26 +165,23 @@ export default function SellBookScreen({ navigation }: any) {
 
         {/* Image Upload */}
         <Text style={styles.sectionLabel}>Hình ảnh sách</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.imageRow}>
-          <TouchableOpacity style={styles.addImageButton} onPress={handleAddImage}>
-            <Icon name="camera-outline" size={28} color={Colors.primary} />
-            <Text style={styles.addImageText}>Thêm ảnh</Text>
-            <Text style={styles.addImageCount}>{images.length}/5</Text>
-          </TouchableOpacity>
-          {images.map((uri, index) => (
-            <View key={index} style={styles.imageThumb}>
-              <Image source={{ uri }} style={styles.thumbImage} />
+        <View style={styles.imageRow}>
+          {image ? (
+            <View style={styles.imageThumb}>
+              <Image source={{ uri: image }} style={styles.thumbImage} />
               <TouchableOpacity
                 style={styles.removeImage}
-                onPress={() => setImages(prev => prev.filter((_, i) => i !== index))}>
+                onPress={() => setImage(null)}>
                 <Icon name="close-circle" size={24} color="#FF3B30" />
               </TouchableOpacity>
             </View>
-          ))}
-        </ScrollView>
+          ) : (
+            <TouchableOpacity style={styles.addImageButton} onPress={handleAddImage}>
+              <Icon name="camera-outline" size={28} color={Colors.primary} />
+              <Text style={styles.addImageText}>Thêm ảnh</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {/* Book Info */}
         <Text style={styles.sectionLabel}>Thông tin sách *</Text>
@@ -159,8 +194,8 @@ export default function SellBookScreen({ navigation }: any) {
             style={styles.input}
             placeholder="Tên sách"
             placeholderTextColor={Colors.textMuted}
-            value={title}
-            onChangeText={setTitle}
+            value={formData.title}
+            onChangeText={(text) => handleChange('title', text)}
           />
         </View>
 
@@ -172,8 +207,8 @@ export default function SellBookScreen({ navigation }: any) {
             style={styles.input}
             placeholder="Tác giả"
             placeholderTextColor={Colors.textMuted}
-            value={author}
-            onChangeText={setAuthor}
+            value={formData.author}
+            onChangeText={(text) => handleChange('author', text)}
           />
         </View>
 
@@ -189,8 +224,8 @@ export default function SellBookScreen({ navigation }: any) {
               style={styles.input}
               placeholder="Giá bán"
               placeholderTextColor={Colors.textMuted}
-              value={price}
-              onChangeText={setPrice}
+              value={formData.price}
+              onChangeText={(text) => handleChange('price', text)}
               keyboardType="numeric"
             />
           </View>
@@ -203,8 +238,8 @@ export default function SellBookScreen({ navigation }: any) {
               style={styles.input}
               placeholder="Giá gốc (tuỳ chọn)"
               placeholderTextColor={Colors.textMuted}
-              value={originalPrice}
-              onChangeText={setOriginalPrice}
+              value={formData.originalPrice}
+              onChangeText={(text) => handleChange('originalPrice', text)}
               keyboardType="numeric"
             />
           </View>
@@ -217,7 +252,7 @@ export default function SellBookScreen({ navigation }: any) {
           contentContainerStyle={styles.priceOptions}>
           {[1000, 5000, 10000, 20000, 50000, 100000, 150000, 200000, 300000, 500000].map(
             value => {
-              const isSelected = price === String(value);
+              const isSelected = formData.price === String(value);
               const label = value >= 1000
                 ? `${(value / 1000).toLocaleString('vi-VN')}K`
                 : `${value}`;
@@ -225,7 +260,7 @@ export default function SellBookScreen({ navigation }: any) {
                 <TouchableOpacity
                   key={value}
                   style={[styles.priceChip, isSelected && styles.priceChipActive]}
-                  onPress={() => setPrice(String(value))}>
+                  onPress={() => handleChange('price', String(value))}>
                   <Text
                     style={[
                       styles.priceChipText,
@@ -239,11 +274,11 @@ export default function SellBookScreen({ navigation }: any) {
           )}
         </ScrollView>
 
-        {originalPrice && price && Number(originalPrice) > Number(price) && (
+        {formData.originalPrice && formData.price && Number(formData.originalPrice) > Number(formData.price) && (
           <View style={styles.discountInfo}>
             <Icon name="pricetag" size={14} color={Colors.success} />
             <Text style={styles.discountText}>
-              Giảm {Math.round(((Number(originalPrice) - Number(price)) / Number(originalPrice)) * 100)}% so với giá gốc
+              Giảm {Math.round(((Number(formData.originalPrice) - Number(formData.price)) / Number(formData.originalPrice)) * 100)}% so với giá gốc
             </Text>
           </View>
         )}
@@ -252,12 +287,12 @@ export default function SellBookScreen({ navigation }: any) {
         <Text style={styles.sectionLabel}>Tình trạng sách *</Text>
         <View style={styles.chipRow}>
           {conditions.map(condition => {
-            const isActive = selectedCondition === condition;
+            const isActive = formData.condition === condition;
             return (
               <TouchableOpacity
                 key={condition}
                 style={[styles.chip, isActive && styles.chipActive]}
-                onPress={() => setSelectedCondition(condition)}>
+                onPress={() => handleChange('condition', condition)}>
                 <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
                   {condition}
                 </Text>
@@ -270,12 +305,12 @@ export default function SellBookScreen({ navigation }: any) {
         <Text style={styles.sectionLabel}>Danh mục *</Text>
         <View style={styles.chipRow}>
           {faculties.map(faculty => {
-            const isActive = selectedFaculty === faculty;
+            const isActive = formData.faculty === faculty;
             return (
               <TouchableOpacity
                 key={faculty}
                 style={[styles.chip, isActive && styles.chipActive]}
-                onPress={() => setSelectedFaculty(faculty)}>
+                onPress={() => handleChange('faculty', faculty)}>
                 <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
                   {faculty}
                 </Text>
@@ -291,14 +326,14 @@ export default function SellBookScreen({ navigation }: any) {
             style={styles.textArea}
             placeholder="Mô tả tình trạng sách, lý do bán, ghi chú..."
             placeholderTextColor={Colors.textMuted}
-            value={description}
-            onChangeText={setDescription}
+            value={formData.description}
+            onChangeText={(text) => handleChange('description', text)}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
             maxLength={500}
           />
-          <Text style={styles.charCount}>{description.length}/500</Text>
+          <Text style={styles.charCount}>{formData.description.length}/500</Text>
         </View>
 
         {/* Tips */}
@@ -331,7 +366,7 @@ export default function SellBookScreen({ navigation }: any) {
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </View >
   );
 }
 

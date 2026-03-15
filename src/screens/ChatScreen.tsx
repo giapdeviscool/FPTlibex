@@ -11,6 +11,8 @@ import {
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
 import { mockConversations, Conversation } from '../data/mockChats';
+import { getMyChatRooms } from '../service/chat.service';
+import { useFocusEffect } from '@react-navigation/native';
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + 'đ';
@@ -85,10 +87,54 @@ function ConversationItem({
 
 export default function ChatScreen({ navigation }: any) {
   const [searchText, setSearchText] = useState<string>('');
+  const [allConversations, setAllConversations] = useState<Conversation[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const [filteredConversations, setFilteredConversations] = useState<Conversation[]>(mockConversations);
+  const displayedConversations = React.useMemo(() => {
+    if (!searchText.trim()) return allConversations;
+    const lowerSearch = searchText.toLowerCase();
+    return allConversations.filter(
+      item =>
+        item.userName.toLowerCase().includes(lowerSearch) ||
+        item.bookTitle.toLowerCase().includes(lowerSearch)
+    );
+  }, [searchText, allConversations]);
 
-  const unreadTotal = mockConversations.reduce(
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchRooms = async () => {
+        try {
+          setIsLoading(true);
+          const response: any = await getMyChatRooms();
+          console.log('Chat rooms response:', response);
+          if (response && response.success && response.data && Array.isArray(response.data.conversations)) {
+            const formattedRooms: Conversation[] = response.data.conversations.map((r: any) => ({
+              id: r.id || r._id,
+              userName: r.userName,
+              avatarInitial: r.avatarInitial || (r.userName || 'U').charAt(0),
+              bookTitle: r.bookTitle,
+              bookPrice: r.bookPrice,
+              lastMessage: r.lastMessage,
+              time: r.time,
+              unreadCount: r.unreadCount || 0,
+              isOnline: r.isOnline || false,
+            }));
+            setAllConversations(formattedRooms);
+          } else {
+            console.warn('Chat rooms list is empty or invalid structure:', response);
+          }
+        } catch (error) {
+          console.error('Error fetching chat rooms:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchRooms();
+    }, [])
+  );
+
+  const unreadTotal = allConversations.reduce(
     (sum, c) => sum + c.unreadCount,
     0,
   );
@@ -108,9 +154,6 @@ export default function ChatScreen({ navigation }: any) {
               </Text>
             )}
           </View>
-          <TouchableOpacity style={styles.headerButton}>
-            <Icon name="create-outline" size={22} color={Colors.primary} />
-          </TouchableOpacity>
         </View>
 
         {/* Search */}
@@ -128,7 +171,7 @@ export default function ChatScreen({ navigation }: any) {
 
       {/* Conversation List */}
       <FlatList
-        data={filteredConversations}
+        data={displayedConversations}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
           <ConversationItem

@@ -8,9 +8,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
+import { register } from '../service/auth.service';
 
 export default function RegisterScreen({ navigation }: any) {
   const [name, setName] = useState('');
@@ -21,16 +23,19 @@ export default function RegisterScreen({ navigation }: any) {
 
   const isFormValid = name && studentId && password && confirmPassword === password;
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     // Navigate straight to Main tabs after successful register
-    navigation.replace('MainTabs');
+    const response = await register({ name, studentId, password, });
+    console.log(response);
+    Alert.alert('Thành công', 'Đăng ký thành công');
+    navigation.replace('Login');
   };
 
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.container}>
-      
+
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}

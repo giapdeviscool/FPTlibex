@@ -10,7 +10,9 @@ import {
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../theme/colors';
+import { createOrder } from '../service/order.service';
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + ' F-Coin';
@@ -36,18 +38,39 @@ export default function CheckoutScreen({ route, navigation }: any) {
         { text: 'Hủy bỏ', style: 'cancel' },
         {
           text: 'Thanh toán',
-          onPress: () => {
-            // Mock placing order
-            Alert.alert(
-              'Thành công! 🎉',
-              'Đơn hàng của bạn đang được duyệt bởi người bán.',
-              [
-                {
-                  text: 'Xem đơn hàng',
-                  onPress: () => navigation.navigate('MainTabs', { screen: 'Orders' })
-                }
-              ]
-            );
+          onPress: async () => {
+            try {
+              const userInfo = await AsyncStorage.getItem('user_info');
+              if (!userInfo) {
+                Alert.alert('Lỗi', 'Vui lòng đăng nhập lại để tiếp tục');
+                return;
+              }
+
+              const user = JSON.parse(userInfo);
+
+              const response = await createOrder({
+                bookId: bookId,
+                buyer: user.studentId,
+                seller: sellerName // sellerName passed from BookDetail is the studentId
+              });
+              console.log("order : ", response)
+              Alert.alert(
+                'Thành công! 🎉',
+                'Đơn hàng của bạn đang được duyệt bởi người bán.',
+                [
+                  {
+                    text: 'Xem đơn hàng',
+                    onPress: () => navigation.navigate('MainTabs', { screen: 'Orders' })
+                  }
+                ]
+              );
+            } catch (error: any) {
+              console.error('Create Order Error:', error);
+              Alert.alert(
+                'Lỗi',
+                error.response?.data?.message || 'Không thể tạo đơn hàng'
+              );
+            }
           }
         }
       ]

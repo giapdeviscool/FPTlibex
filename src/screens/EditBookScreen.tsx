@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
+import { BookResponse, deleteSellingBook, updateSellingBook } from '../service/book.service';
 
 const conditions = ['Như mới', 'Tốt', 'Khá', 'Cũ'] as const;
 const faculties = ['CNTT', 'Kinh tế', 'Ngoại ngữ', 'Thiết kế', 'Marketing', 'Khác'] as const;
@@ -21,30 +22,55 @@ export default function EditBookScreen({ route, navigation }: any) {
 
   const [title, setTitle] = useState(params.title || '');
   const [author, setAuthor] = useState(params.author || '');
-  const [price, setPrice] = useState(params.price || '');
-  const [originalPrice, setOriginalPrice] = useState(params.originalPrice || '');
+  const [price, setPrice] = useState(params.price?.toString() || '');
+  const [originalPrice, setOriginalPrice] = useState(params.originalPrice?.toString() || '');
   const [selectedCondition, setSelectedCondition] = useState<string | null>(
     params.condition || null,
   );
   const [selectedFaculty, setSelectedFaculty] = useState<string | null>(
     params.faculty || null,
   );
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(params.description || '');
 
   const isFormValid =
     title.trim() &&
     author.trim() &&
-    price.trim() &&
+    Number(price) > 0 &&
+    Number(originalPrice) > 0 &&
     selectedCondition &&
     selectedFaculty;
 
-  const handleSave = () => {
+  const handleDeleteSellingPost = async () => {
+    const response = await deleteSellingBook(params.bookId);
+    if (!response) {
+      Alert.alert('Lỗi', 'Không thể xoá sách');
+      return;
+    }
+    Alert.alert('Xoá thành công', 'Sách đã được xoá');
+    navigation.goBack();
+  }
+
+  const handleSave = async () => {
     if (!isFormValid) {
       Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ các trường bắt buộc');
       return;
     }
+    const updateData = {
+      title,
+      author,
+      price: Number(price),
+      originalPrice: Number(originalPrice),
+      condition: selectedCondition,
+      faculty: selectedFaculty,
+      description
+    }
+    const response = await updateSellingBook(params.bookId, updateData);
+    if (!response) {
+      Alert.alert('Lỗi', 'Không thể cập nhật sách');
+      return;
+    }
     Alert.alert(
-      'Cập nhật thành công! ✅',
+      'Cập nhật thành công!',
       `"${title}" đã được cập nhật`,
       [{ text: 'OK', onPress: () => navigation.goBack() }],
     );
@@ -239,7 +265,7 @@ export default function EditBookScreen({ route, navigation }: any) {
               {
                 text: 'Xoá',
                 style: 'destructive',
-                onPress: () => navigation.goBack(),
+                onPress: () => handleDeleteSellingPost(),
               },
             ])
           }>

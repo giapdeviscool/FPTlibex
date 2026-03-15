@@ -7,9 +7,13 @@ import {
   Image,
   TouchableOpacity,
   StatusBar,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../theme/colors';
+import SocketService from '../service/socket.service';
 
 const menuItems = [
   {
@@ -27,10 +31,11 @@ const menuItems = [
     route: 'Withdraw',
   },
   {
-    id: '1',
+    id: 'edit_profile',
     icon: 'person-outline',
     title: 'Chỉnh sửa hồ sơ',
     color: '#3B82F6', // Blue
+    route: 'EditProfile',
   },
   {
     id: '2',
@@ -41,6 +46,36 @@ const menuItems = [
 ];
 
 export default function ProfileScreen({ navigation }: any) {
+  const [user, setUser] = React.useState<any>(null);
+
+  const loadUser = async () => {
+    const userInfo = await AsyncStorage.getItem('user_info');
+    if (userInfo) {
+      setUser(JSON.parse(userInfo));
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUser();
+    }, [])
+  );
+
+  const handleLogout = () => {
+    Alert.alert('Đăng xuất', 'Bạn có chắc chắn muốn đăng xuất?', [
+      { text: 'Hủy', style: 'cancel' },
+      {
+        text: 'Đăng xuất',
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.removeItem('user_token');
+          await AsyncStorage.removeItem('user_info');
+          SocketService.disconnect();
+          navigation.replace('Auth', { screen: 'Login' });
+        },
+      },
+    ]);
+  };
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
@@ -66,8 +101,8 @@ export default function ProfileScreen({ navigation }: any) {
             </View>
           </View>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>Nguyễn Văn A</Text>
-            <Text style={styles.userEmail}>SE172344 • K17</Text>
+            <Text style={styles.userName}>{user?.name || 'Nguyễn Văn A'}</Text>
+            <Text style={styles.userEmail}>{user?.studentId || 'SE172344'} • K17</Text>
             <View style={styles.tag}>
               <Text style={styles.tagText}>Sinh viên FPTU HN</Text>
             </View>
@@ -120,7 +155,11 @@ export default function ProfileScreen({ navigation }: any) {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          activeOpacity={0.8}
+          onPress={handleLogout}
+        >
           <Icon name="log-out-outline" size={20} color={Colors.error} />
           <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>

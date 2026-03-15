@@ -1,14 +1,18 @@
+export type Condition = 'Như mới' | 'Tốt' | 'Khá' | 'Cũ' | '';
+export type Faculty = 'CNTT' | 'Kinh tế' | 'Ngoại ngữ' | 'Thiết kế' | 'Marketing' | 'Khác' | '';
+
 export interface Book {
-  id: string;
+  _id: string;
   title: string;
   author: string;
   price: number;
   originalPrice: number;
-  condition: 'Như mới' | 'Tốt' | 'Khá' | 'Cũ';
+  condition: Condition;
   image: string;
   seller: string;
-  faculty: string;
-  postedAt: string;
+  faculty: Faculty;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export const categories = [
@@ -22,7 +26,7 @@ export const categories = [
 
 export let mockBooks: Book[] = [
   {
-    id: '1',
+    _id: '1',
     title: 'Introduction to Algorithms',
     author: 'Thomas H. Cormen',
     price: 120000,
@@ -31,10 +35,11 @@ export let mockBooks: Book[] = [
     image: 'https://m.media-amazon.com/images/I/61ZFuVSiBSL._SL1500_.jpg',
     seller: 'Nguyễn Văn A',
     faculty: 'CNTT',
-    postedAt: '2 giờ trước',
+    createdAt: '2022-01-01T00:00:00.000Z',
+    updatedAt: '2022-01-01T00:00:00.000Z',
   },
   {
-    id: '2',
+    _id: '2',
     title: 'Clean Code',
     author: 'Robert C. Martin',
     price: 85000,
@@ -43,10 +48,11 @@ export let mockBooks: Book[] = [
     image: 'https://m.media-amazon.com/images/I/51E2055ZGUL._SL1000_.jpg',
     seller: 'Trần Thị B',
     faculty: 'CNTT',
-    postedAt: '5 giờ trước',
+    createdAt: '2022-01-01T00:00:00.000Z',
+    updatedAt: '2022-01-01T00:00:00.000Z',
   },
   {
-    id: '3',
+    _id: '3',
     title: 'Nguyên lý Kế toán',
     author: 'PGS.TS Nguyễn Văn Công',
     price: 45000,
@@ -55,10 +61,11 @@ export let mockBooks: Book[] = [
     image: 'https://m.media-amazon.com/images/I/71s0lumKb-L._SL1500_.jpg',
     seller: 'Lê Văn C',
     faculty: 'Kinh tế',
-    postedAt: '1 ngày trước',
+    createdAt: '2022-01-01T00:00:00.000Z',
+    updatedAt: '2022-01-01T00:00:00.000Z',
   },
   {
-    id: '4',
+    _id: '4',
     title: 'Head First Design Patterns',
     author: 'Eric Freeman',
     price: 95000,
@@ -67,10 +74,11 @@ export let mockBooks: Book[] = [
     image: 'https://m.media-amazon.com/images/I/61APhXCksuL._SL1500_.jpg',
     seller: 'Phạm Thị D',
     faculty: 'CNTT',
-    postedAt: '1 ngày trước',
+    createdAt: '2022-01-01T00:00:00.000Z',
+    updatedAt: '2022-01-01T00:00:00.000Z',
   },
   {
-    id: '5',
+    _id: '5',
     title: 'Marketing căn bản',
     author: 'Philip Kotler',
     price: 55000,
@@ -79,10 +87,11 @@ export let mockBooks: Book[] = [
     image: 'https://m.media-amazon.com/images/I/71wSMFCfKPL._SL1500_.jpg',
     seller: 'Hoàng Văn E',
     faculty: 'Marketing',
-    postedAt: '3 ngày trước',
+    createdAt: '2022-01-01T00:00:00.000Z',
+    updatedAt: '2022-01-01T00:00:00.000Z',
   },
   {
-    id: '6',
+    _id: '6',
     title: 'English Grammar in Use',
     author: 'Raymond Murphy',
     price: 65000,
@@ -91,6 +100,7 @@ export let mockBooks: Book[] = [
     image: 'https://m.media-amazon.com/images/I/71KB-rEYSxL._SL1500_.jpg',
     seller: 'Đỗ Thị F',
     faculty: 'Ngoại ngữ',
-    postedAt: '4 ngày trước',
+    createdAt: '2022-01-01T00:00:00.000Z',
+    updatedAt: '2022-01-01T00:00:00.000Z',
   },
 ];

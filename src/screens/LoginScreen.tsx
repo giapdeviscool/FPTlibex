@@ -7,30 +7,44 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Image,
   StatusBar,
   Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../theme/colors';
-import { mockUsers } from '../data/mockUsers';
+import { login } from '../service/auth.service';
 
 export default function LoginScreen({ navigation }: any) {
   const [studentId, setStudentId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const handleLogin = () => {
-    // Check against mock data
-    const user = mockUsers.find(
-      u => u.studentId.toUpperCase() === studentId.toUpperCase() && u.password === password
-    );
+  
 
-    if (user) {
-      // Navigate to Main app tabs on successful login
-      navigation.replace('MainTabs');
-    } else {
-      Alert.alert('Đăng nhập thất bại', 'MSSV hoặc mật khẩu không chính xác.');
+  const handleLogin = async () => {
+    try {
+      const response = await login({ studentId, password });
+
+      if (response && response.token) {
+        // Save token to AsyncStorage
+        await AsyncStorage.setItem('user_token', response.token);
+        
+        // If there's user info, we could save it too
+        if (response.user) {
+          await AsyncStorage.setItem('user_info', JSON.stringify(response.user));
+        }
+
+        navigation.replace('MainTabs');
+      } else {
+        Alert.alert('Đăng nhập thất bại', 'Kết quả trả về không hợp lệ.');
+      }
+    } catch (error: any) {
+      console.error('Login Error:', error);
+      Alert.alert(
+        'Đăng nhập thất bại',
+        error.response?.data?.message || 'MSSV hoặc mật khẩu không chính xác.'
+      );
     }
   };
 

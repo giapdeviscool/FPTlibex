@@ -20,6 +20,7 @@ import EditBookScreen from './src/screens/EditBookScreen';
 import OrderScreen from './src/screens/OrderScreen';
 import BookDetailScreen from './src/screens/BookDetailScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
+import EditProfileScreen from './src/screens/EditProfileScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import RegisterScreen from './src/screens/RegisterScreen';
 import ForgotPasswordScreen from './src/screens/ForgotPasswordScreen';
@@ -72,12 +73,11 @@ function HomeStack() {
   );
 }
 
-// Chat Stack with Chat Detail
+// Chat Stack
 function ChatStack() {
   return (
     <ChatStackNav.Navigator screenOptions={{ headerShown: false }}>
       <ChatStackNav.Screen name="ChatList" component={ChatScreen} />
-      <ChatStackNav.Screen name="ChatDetail" component={ChatDetailScreen} />
     </ChatStackNav.Navigator>
   );
 }
@@ -160,12 +160,14 @@ function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <RootStackNav.Navigator screenOptions={{ headerShown: false }}>
-          {/* <RootStackNav.Screen name="Auth" component={AuthStack} /> */}
+          <RootStackNav.Screen name="Auth" component={AuthStack} />
           <RootStackNav.Screen name="MainTabs" component={MainTabs} />
           <RootStackNav.Screen name="Deposit" component={DepositScreen} />
           <RootStackNav.Screen name="Withdraw" component={WithdrawScreen} />
           <RootStackNav.Screen name="PaymentQR" component={PaymentQRScreen} />
           <RootStackNav.Screen name="Checkout" component={CheckoutScreen} />
+          <RootStackNav.Screen name="EditProfile" component={EditProfileScreen} />
+          <RootStackNav.Screen name="ChatDetail" component={ChatDetailScreen} />
         </RootStackNav.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

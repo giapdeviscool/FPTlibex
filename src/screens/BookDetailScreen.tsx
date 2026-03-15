@@ -8,10 +8,13 @@ import {
   TouchableOpacity,
   StatusBar,
   Dimensions,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
 import { mockBooks } from '../data/mockBooks';
+import { getOrCreateChatRoom } from '../service/chat.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -30,8 +33,68 @@ const conditionColor = (condition: string) => {
 };
 
 export default function BookDetailScreen({ route, navigation }: any) {
-  const { bookId } = route.params || {};
-  const book = mockBooks.find(b => b.id === bookId);
+  const book = route.params;
+  const [isMyBook, setIsMyBook] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkOwnership = async () => {
+      try {
+        const userInfoStr = await AsyncStorage.getItem('user_info');
+        if (userInfoStr && book) {
+          const userInfo = JSON.parse(userInfoStr);
+          // Check if the current user's studentId (or _id) matches the book's seller
+          // In some places book.seller is a student code, in others it's an object.
+          const sellerId = typeof book.seller === 'object' ? book.seller.studentId || book.seller._id : book.seller;
+          const myId = userInfo.studentId || userInfo._id;
+
+          if (sellerId === myId) {
+            setIsMyBook(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking book ownership:', error);
+      }
+    };
+
+    checkOwnership();
+  }, [book]);
+
+  const handleChat = async () => {
+    try {
+      const userInfoStr = await AsyncStorage.getItem('user_info');
+      if (!userInfoStr) {
+        Alert.alert('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để chat với người bán');
+        navigation.navigate('Auth', { screen: 'Login' });
+        return;
+      }
+
+      // In a real API response, book.seller might be an object { _id, name } or there's a sellerId.
+      // Based on the user's backend spec, we need the "ID_NGUOI_BAN".
+      const userInfo = JSON.parse(userInfoStr);
+      const recipientStudentCode = book.seller;
+      const senderId = userInfo._id;
+      const response: any = await getOrCreateChatRoom(recipientStudentCode, senderId, book._id);
+      console.log('getOrCreateChatRoom response:', response);
+
+      // Handle both wrapped { success: true, data: { _id: ... } } and direct { _id: ... }
+      const roomData = response?.data || response;
+
+      if (roomData && roomData._id) {
+        navigation.navigate('ChatDetail', {
+          conversationId: roomData._id,
+          userName: typeof book.seller === 'object' ? book.seller.name : (book.sellerName || book.seller),
+          bookTitle: book.title,
+          bookPrice: book.price,
+          isOnline: true,
+        });
+      } else {
+        console.warn('Room data not found in response:', response);
+      }
+    } catch (error) {
+      console.error('Error in handleChat:', error);
+      Alert.alert('Lỗi', 'Không thể bắt đầu chat');
+    }
+  };
 
   if (!book) {
     return (
@@ -111,7 +174,7 @@ export default function BookDetailScreen({ route, navigation }: any) {
             <View style={styles.infoCard}>
               <Icon name="time-outline" size={18} color={Colors.primary} />
               <Text style={styles.infoLabel}>Đăng</Text>
-              <Text style={styles.infoValue}>{book.postedAt}</Text>
+              <Text style={styles.infoValue}>{new Date(book.createdAt).toLocaleDateString("vi-VN")}</Text>
             </View>
           </View>
 
@@ -119,9 +182,7 @@ export default function BookDetailScreen({ route, navigation }: any) {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Mô tả</Text>
             <Text style={styles.descriptionText}>
-              Sách {book.condition.toLowerCase()}, không rách, không viết bẩn. Đã sử dụng qua 1 kỳ học.
-              Phù hợp cho sinh viên ngành {book.faculty} cần dùng cho các môn liên quan.
-              Giao dịch trực tiếp tại trường FPT hoặc gửi qua đường bưu điện.
+              {book.description}
             </Text>
           </View>
 
@@ -143,9 +204,7 @@ export default function BookDetailScreen({ route, navigation }: any) {
                   <Text style={styles.sellerMetaText}>4.8 • 12 sách đã bán</Text>
                 </View>
               </View>
-              <TouchableOpacity style={styles.viewProfileBtn}>
-                <Text style={styles.viewProfileText}>Xem</Text>
-              </TouchableOpacity>
+
             </View>
           </View>
 
@@ -160,25 +219,27 @@ export default function BookDetailScreen({ route, navigation }: any) {
       </ScrollView>
 
       {/* Bottom Bar */}
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.chatButton}>
-          <Icon name="chatbubble-outline" size={20} color={Colors.primary} />
-          <Text style={styles.chatButtonText}>Chat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={styles.buyButton} 
-          activeOpacity={0.85}
-          onPress={() => navigation.navigate('Checkout', {
-             bookId: book.id,
-             bookTitle: book.title,
-             bookPrice: book.price,
-             bookImage: book.image,
-             sellerName: book.seller
-          })}>
-          <Icon name="cart-outline" size={20} color="#FFF" />
-          <Text style={styles.buyButtonText}>Mua ngay • {formatPrice(book.price)}</Text>
-        </TouchableOpacity>
-      </View>
+      {!isMyBook && (
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.chatButton} onPress={handleChat}>
+            <Icon name="chatbubble-outline" size={20} color={Colors.primary} />
+            <Text style={styles.chatButtonText}>Chat</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.buyButton}
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('Checkout', {
+              bookId: book._id,
+              bookTitle: book.title,
+              bookPrice: book.price,
+              bookImage: book.image,
+              sellerName: book.seller
+            })}>
+            <Icon name="cart-outline" size={20} color="#FFF" />
+            <Text style={styles.buyButtonText}>Mua ngay • {formatPrice(book.price)}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }

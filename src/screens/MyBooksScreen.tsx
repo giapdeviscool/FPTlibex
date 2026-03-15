@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,12 @@ import {
   StatusBar,
   Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
-import { myPostedBooks } from '../data/myBooks';
 import type { Book } from '../data/mockBooks';
-
+import { BookResponse, getSellerBooks } from '../service/book.service';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + ' F-Coin';
 };
@@ -56,7 +57,7 @@ function MyBookItem({
             ]}>
             <Text style={styles.conditionText}>{book.condition}</Text>
           </View>
-          <Text style={styles.bookTime}>{book.postedAt}</Text>
+          <Text style={styles.bookTime}>{new Date(book.createdAt).toLocaleDateString("vi-VN")}</Text>
         </View>
       </View>
       <View style={styles.bookActions}>
@@ -72,7 +73,7 @@ function MyBookItem({
 }
 
 export default function MyBooksScreen({ navigation }: any) {
-  const [books, setBooks] = useState<Book[]>(myPostedBooks);
+  const [books, setBooks] = useState<BookResponse[]>([]);
 
   const handleDelete = (bookId: string, bookTitle: string) => {
     Alert.alert('Xoá sách', `Bạn có chắc muốn xoá "${bookTitle}"?`, [
@@ -80,10 +81,27 @@ export default function MyBooksScreen({ navigation }: any) {
       {
         text: 'Xoá',
         style: 'destructive',
-        onPress: () => setBooks(prev => prev.filter(b => b.id !== bookId)),
+        onPress: () => setBooks(prev => prev.filter(b => b._id !== bookId)),
       },
     ]);
   };
+
+  const fetchBooks = async () => {
+    const user_info = await AsyncStorage.getItem('user_info');
+    if (!user_info) return;
+    const user = JSON.parse(user_info);
+    const response = await getSellerBooks(user.studentId);
+    setBooks(response);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchBooks();
+      return () => {
+        setBooks([]);
+      }
+    }, [])
+  );
 
   return (
     <View style={styles.container}>
@@ -98,13 +116,13 @@ export default function MyBooksScreen({ navigation }: any) {
       {/* Book List */}
       <FlatList
         data={books}
-        keyExtractor={item => item.id}
+        keyExtractor={item => item._id}
         renderItem={({ item }) => (
           <MyBookItem
             book={item}
             onEdit={() =>
               navigation.navigate('EditBook', {
-                bookId: item.id,
+                bookId: item._id,
                 title: item.title,
                 author: item.author,
                 price: String(item.price),
@@ -112,9 +130,10 @@ export default function MyBooksScreen({ navigation }: any) {
                 condition: item.condition,
                 faculty: item.faculty,
                 image: item.image,
+                description: item.description,
               })
             }
-            onDelete={() => handleDelete(item.id, item.title)}
+            onDelete={() => handleDelete(item._id, item.title)}
           />
         )}
         contentContainerStyle={styles.listContent}
