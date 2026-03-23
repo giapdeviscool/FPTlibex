@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
-import { mockBooks } from '../data/mockBooks';
 import { getOrCreateChatRoom } from '../service/chat.service';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -74,17 +73,17 @@ export default function BookDetailScreen({ route, navigation }: any) {
       const recipientStudentCode = book.seller;
       const senderId = userInfo._id;
       const response: any = await getOrCreateChatRoom(recipientStudentCode, senderId, book._id);
-      console.log('getOrCreateChatRoom response:', response);
 
       // Handle both wrapped { success: true, data: { _id: ... } } and direct { _id: ... }
       const roomData = response?.data || response;
-
       if (roomData && roomData._id) {
         navigation.navigate('ChatDetail', {
           conversationId: roomData._id,
           userName: typeof book.seller === 'object' ? book.seller.name : (book.sellerName || book.seller),
+          studentId: book.seller.studentId,
           bookTitle: book.title,
           bookPrice: book.price,
+          bookId: book._id,
           isOnline: true,
         });
       } else {
@@ -191,10 +190,26 @@ export default function BookDetailScreen({ route, navigation }: any) {
             <Text style={styles.sectionTitle}>Người bán</Text>
             <View style={styles.sellerCard}>
               <View style={styles.sellerAvatar}>
-                <Text style={styles.sellerAvatarText}>{book.seller.charAt(0)}</Text>
+                {book.seller?.avatar ? (
+                  <Image
+                    source={{ uri: book.seller.avatar }}
+                    style={styles.sellerAvatarImage}
+                  />
+                ) : (
+                  <Text style={styles.sellerAvatarText}>
+                    {(typeof book.seller === 'object'
+                      ? book.seller?.studentId || book.seller?.name || '?'
+                      : String(book.seller) || '?'
+                    ).charAt(0).toUpperCase()}
+                  </Text>
+                )}
               </View>
               <View style={styles.sellerInfo}>
-                <Text style={styles.sellerName}>{book.seller}</Text>
+                <Text style={styles.sellerName}>
+                  {typeof book.seller === 'object'
+                    ? book.seller?.name || book.seller?.studentId || 'Người bán'
+                    : book.seller}
+                </Text>
                 <View style={styles.sellerMeta}>
                   <Icon name="location-outline" size={13} color={Colors.textMuted} />
                   <Text style={styles.sellerMetaText}>FPT University, Hà Nội</Text>
@@ -432,6 +447,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  sellerAvatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
   },
   sellerAvatarText: {
     color: '#FFF',
@@ -527,7 +548,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   buyButtonText: {
-    fontSize: 15,
+    fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
   },

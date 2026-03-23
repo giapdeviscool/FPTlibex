@@ -168,6 +168,7 @@ function App() {
           <RootStackNav.Screen name="Checkout" component={CheckoutScreen} />
           <RootStackNav.Screen name="EditProfile" component={EditProfileScreen} />
           <RootStackNav.Screen name="ChatDetail" component={ChatDetailScreen} />
+          <RootStackNav.Screen name="BookDetail" component={BookDetailScreen} />
         </RootStackNav.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

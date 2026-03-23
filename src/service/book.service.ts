@@ -1,3 +1,4 @@
+import { User } from "../data/mockUsers";
 import axiosClient from "../utils/axios.client";
 
 enum BOOK_API {
@@ -12,11 +13,12 @@ export interface BookResponse {
     _id: string;
     title: string;
     author: string;
+    avatar: string;
     price: number;
     originalPrice: number;
     condition: Condition;
     image: string;
-    seller: string;
+    seller: User
     faculty: Faculty;
     createdAt: string;
     updatedAt: string;
@@ -33,6 +35,14 @@ export const createSellingBook = async (bookData: any) => {
 export const getAllSellingBooks = async () => {
     try {
         return await axiosClient.get<BookResponse[]>(BOOK_API.SELLING_BOOK);
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const getBookById = async (bookId: string) => {
+    try {
+        return await axiosClient.get<BookResponse>(`${BOOK_API.SELLING_BOOK}/${bookId}`);
     } catch (error) {
         throw error;
     }

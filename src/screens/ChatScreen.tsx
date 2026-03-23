@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
-import { mockConversations, Conversation } from '../data/mockChats';
+import { Conversation } from '../data/mockChats';
 import { getMyChatRooms } from '../service/chat.service';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -27,7 +27,6 @@ function ConversationItem({
   onPress: () => void;
 }) {
   const hasUnread = conversation.unreadCount > 0;
-
   return (
     <TouchableOpacity
       style={styles.conversationItem}
@@ -40,7 +39,10 @@ function ConversationItem({
             styles.avatar,
             hasUnread && styles.avatarUnread,
           ]}>
-          <Text style={styles.avatarText}>{conversation.avatarInitial}</Text>
+          <Image
+            source={{ uri: conversation.avatar }}
+            style={styles.avatar}
+          />
         </View>
         {conversation.isOnline && <View style={styles.onlineDot} />}
       </View>
@@ -119,7 +121,6 @@ export default function ChatScreen({ navigation }: any) {
         item.bookTitle.toLowerCase().includes(lowerSearch)
     );
   }, [searchText, allConversations]);
-
   useFocusEffect(
     React.useCallback(() => {
       const fetchRooms = async () => {
@@ -131,9 +132,11 @@ export default function ChatScreen({ navigation }: any) {
             const formattedRooms: Conversation[] = response.data.conversations.map((r: any) => ({
               id: r.id || r._id,
               userName: r.userName,
+              avatar: r.avatar,
               avatarInitial: r.avatarInitial || (r.userName || 'U').charAt(0),
               bookTitle: r.bookTitle,
               bookPrice: r.bookPrice,
+              bookId: r.bookId,
               lastMessage: r.lastMessage,
               lastMessageImage: r.lastMessageImage, // Get image from response
               time: r.time,
@@ -197,14 +200,17 @@ export default function ChatScreen({ navigation }: any) {
         renderItem={({ item }) => (
           <ConversationItem
             conversation={item}
-            onPress={() =>
+            onPress={() => {
+              console.log(item);
               navigation.navigate('ChatDetail', {
                 conversationId: item.id,
                 userName: item.userName,
                 bookTitle: item.bookTitle,
                 bookPrice: item.bookPrice,
+                bookId: item.bookId,
                 isOnline: item.isOnline,
               })
+            }
             }
           />
         )}

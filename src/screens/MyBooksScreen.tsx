@@ -98,7 +98,7 @@ export default function MyBooksScreen({ navigation }: any) {
     const user_info = await AsyncStorage.getItem('user_info');
     if (!user_info) return;
     const user = JSON.parse(user_info);
-    const response = await getSellerBooks(user.studentId);
+    const response = await getSellerBooks(user._id);
     setBooks(response.data);
   };
 

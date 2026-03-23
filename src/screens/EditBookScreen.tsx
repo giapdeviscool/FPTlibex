@@ -9,10 +9,13 @@ import {
   StatusBar,
   Alert,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 import { Colors } from '../theme/colors';
 import { BookResponse, deleteSellingBook, updateSellingBook } from '../service/book.service';
+import { uploadImage } from '../service/upload.service';
 
 const conditions = ['Như mới', 'Tốt', 'Khá', 'Cũ'] as const;
 const faculties = ['CNTT', 'Kinh tế', 'Ngoại ngữ', 'Thiết kế', 'Marketing', 'Khác'] as const;
@@ -31,6 +34,8 @@ export default function EditBookScreen({ route, navigation }: any) {
     params.faculty || null,
   );
   const [description, setDescription] = useState(params.description || '');
+  const [newImage, setNewImage] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const isFormValid =
     title.trim() &&
@@ -50,30 +55,88 @@ export default function EditBookScreen({ route, navigation }: any) {
     navigation.goBack();
   }
 
+  const handleChangeImage = () => {
+    Alert.alert('Đổi ảnh', 'Chọn nguồn ảnh', [
+      {
+        text: 'Chụp ảnh',
+        onPress: async () => {
+          try {
+            const response = await launchCamera({
+              mediaType: 'photo',
+              quality: 0.8,
+            });
+            if (response.assets && response.assets[0]?.uri) {
+              setNewImage(response.assets[0].uri!);
+            }
+          } catch (e) {
+            console.log('Camera error:', e);
+          }
+        },
+      },
+      {
+        text: 'Chọn từ thư viện',
+        onPress: async () => {
+          try {
+            const response = await launchImageLibrary({
+              mediaType: 'photo',
+              quality: 0.8,
+              selectionLimit: 1,
+            });
+            if (response.assets && response.assets[0]?.uri) {
+              setNewImage(response.assets[0].uri!);
+            }
+          } catch (e) {
+            console.log('Library error:', e);
+          }
+        },
+      },
+      { text: 'Huỷ', style: 'cancel' },
+    ]);
+  };
+
   const handleSave = async () => {
     if (!isFormValid) {
       Alert.alert('Thiếu thông tin', 'Vui lòng điền đầy đủ các trường bắt buộc');
       return;
     }
-    const updateData = {
-      title,
-      author,
-      price: Number(price),
-      originalPrice: Number(originalPrice),
-      condition: selectedCondition,
-      faculty: selectedFaculty,
-      description
+
+    setIsUploading(true);
+    try {
+      let imageUrl = params.image; // keep existing image by default
+
+      // If user picked a new image, upload it first
+      if (newImage && !newImage.startsWith('http')) {
+        const fileName = `book_${Date.now()}.jpg`;
+        const uploadResult: any = await uploadImage(newImage, fileName);
+        imageUrl = uploadResult.imageUrl || uploadResult.url || uploadResult.data?.url || imageUrl;
+      }
+
+      const updateData = {
+        title,
+        author,
+        price: Number(price),
+        originalPrice: Number(originalPrice),
+        condition: selectedCondition,
+        faculty: selectedFaculty,
+        description,
+        image: imageUrl,
+      };
+      const response = await updateSellingBook(params.bookId, updateData);
+      if (!response) {
+        Alert.alert('Lỗi', 'Không thể cập nhật sách');
+        return;
+      }
+      Alert.alert(
+        'Cập nhật thành công!',
+        `"${title}" đã được cập nhật`,
+        [{ text: 'OK', onPress: () => navigation.goBack() }],
+      );
+    } catch (error) {
+      console.error('Error updating book:', error);
+      Alert.alert('Lỗi', 'Không thể cập nhật sách. Vui lòng thử lại.');
+    } finally {
+      setIsUploading(false);
     }
-    const response = await updateSellingBook(params.bookId, updateData);
-    if (!response) {
-      Alert.alert('Lỗi', 'Không thể cập nhật sách');
-      return;
-    }
-    Alert.alert(
-      'Cập nhật thành công!',
-      `"${title}" đã được cập nhật`,
-      [{ text: 'OK', onPress: () => navigation.goBack() }],
-    );
   };
 
   return (
@@ -109,12 +172,12 @@ export default function EditBookScreen({ route, navigation }: any) {
         keyboardShouldPersistTaps="handled">
 
         {/* Current Image */}
-        {params.image && (
+        {(newImage || params.image) && (
           <>
             <Text style={styles.sectionLabel}>Ảnh hiện tại</Text>
             <View style={styles.currentImageWrap}>
-              <Image source={{ uri: params.image }} style={styles.currentImage} />
-              <TouchableOpacity style={styles.changeImageBtn}>
+              <Image source={{ uri: newImage || params.image }} style={styles.currentImage} />
+              <TouchableOpacity style={styles.changeImageBtn} onPress={handleChangeImage}>
                 <Icon name="camera-outline" size={16} color={Colors.primary} />
                 <Text style={styles.changeImageText}>Đổi ảnh</Text>
               </TouchableOpacity>
@@ -241,19 +304,26 @@ export default function EditBookScreen({ route, navigation }: any) {
         <TouchableOpacity
           style={[styles.submitButton, isFormValid && styles.submitButtonActive]}
           onPress={handleSave}
+          disabled={!isFormValid || isUploading}
           activeOpacity={0.8}>
-          <Icon
-            name="save-outline"
-            size={20}
-            color={isFormValid ? '#FFFFFF' : Colors.textMuted}
-          />
-          <Text
-            style={[
-              styles.submitButtonText,
-              isFormValid && styles.submitButtonTextActive,
-            ]}>
-            Lưu thay đổi
-          </Text>
+          {isUploading ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <>
+              <Icon
+                name="save-outline"
+                size={20}
+                color={isFormValid ? '#FFFFFF' : Colors.textMuted}
+              />
+              <Text
+                style={[
+                  styles.submitButtonText,
+                  isFormValid && styles.submitButtonTextActive,
+                ]}>
+                Lưu thay đổi
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
 
         {/* Delete */}

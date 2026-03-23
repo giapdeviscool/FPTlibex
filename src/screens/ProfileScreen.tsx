@@ -89,10 +89,18 @@ export default function ProfileScreen({ navigation }: any) {
         {/* User Info Card */}
         <View style={styles.userCard}>
           <View style={styles.avatarContainer}>
-            <Image
-              source={{ uri: user?.avatar || '' }}
-              style={styles.avatar}
-            />
+            {user?.avatar ? (
+              <Image
+                source={{ uri: user.avatar }}
+                style={styles.avatar}
+              />
+            ) : (
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <Text style={styles.avatarFallbackText}>
+                  {(user?.name || '?').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.verifiedBadge}>
               <Icon name="checkmark" size={10} color="#FFF" />
             </View>
@@ -221,6 +229,16 @@ const styles = StyleSheet.create({
     height: 72,
     borderRadius: 36,
     backgroundColor: Colors.borderLight,
+  },
+  avatarFallback: {
+    backgroundColor: Colors.primaryLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarFallbackText: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: Colors.primary,
   },
   verifiedBadge: {
     position: 'absolute',

@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
-import { mockBooks, categories, Book } from '../data/mockBooks';
+import { categories, Book } from '../data/mockBooks';
 import BookCard from '../components/BookCard';
 import { useFocusEffect } from '@react-navigation/native';
 import { getAllSellingBooks } from '../service/book.service';
@@ -37,6 +37,7 @@ export default function HomeScreen({ navigation }: any) {
     // Handle both { success: true, data: [...] } and direct array
     setBooks(response?.data || response || []);
   };
+
   const filteredBooks = useMemo(() => {
     if (!books || !Array.isArray(books)) return [];
     return books.filter(book => {
@@ -49,7 +50,6 @@ export default function HomeScreen({ navigation }: any) {
       return matchesCategory && matchesSearch;
     });
   }, [books, selectedCategory, searchText]);
-
   const getCategoryIcon = (iconName: string) => {
     const iconMap: Record<string, string> = {
       apps: 'apps',

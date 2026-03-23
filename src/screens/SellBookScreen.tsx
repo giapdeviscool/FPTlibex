@@ -28,7 +28,7 @@ export default function SellBookScreen({ navigation }: any) {
     price: '',
     originalPrice: '',
     description: '',
-    seller: '',
+    seller: {},
     condition: null as 'Như mới' | 'Tốt' | 'Khá' | 'Cũ' | null,
     faculty: null as 'CNTT' | 'Kinh tế' | 'Ngoại ngữ' | 'Thiết kế' | 'Marketing' | 'Khác' | null,
   });
@@ -41,7 +41,7 @@ export default function SellBookScreen({ navigation }: any) {
       const user = JSON.parse(userInfo);
       setFormData(prev => ({
         ...prev,
-        seller: user.studentId,
+        seller: user._id,
       }));
     }
   };
@@ -81,7 +81,7 @@ export default function SellBookScreen({ navigation }: any) {
         const fileName = `book_${Date.now()}.jpg`;
         const uploadResult: any = await uploadImage(image, fileName);
         console.log('Upload result received:', uploadResult);
-        
+
         // Handle different possible response structures
         remoteImageUrl = uploadResult.imageUrl || uploadResult.url || uploadResult.data?.url || (typeof uploadResult === 'string' ? uploadResult : image);
         console.log('Final URL to be saved:', remoteImageUrl);

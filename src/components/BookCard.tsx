@@ -41,7 +41,6 @@ const getDiscount = (price: number, originalPrice: number) => {
 
 export default function BookCard({ book, onPress }: BookCardProps) {
   const discount = getDiscount(book.price, book.originalPrice);
-
   return (
     <TouchableOpacity
       style={styles.card}
@@ -87,15 +86,22 @@ export default function BookCard({ book, onPress }: BookCardProps) {
         <View style={styles.footer}>
           <View style={styles.sellerRow}>
             <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
-                {book.seller.charAt(0)}
-              </Text>
+              {book.seller?.avatar ? (
+                <Image
+                  source={{ uri: book.seller.avatar }}
+                  style={styles.avatar}
+                />
+              ) : (
+                <View style={styles.avatar}>
+                  <Text style={styles.avatarText}>
+                    {(book.seller?.name || '?').charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
             </View>
-            <Text style={styles.sellerName} numberOfLines={1}>
-              {book.seller}
-            </Text>
+
           </View>
-          <Text style={styles.time}>{book.postedAt}</Text>
+          <Text style={styles.time}>{new Date(book.createdAt).toLocaleString("vi-VN")}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -168,13 +174,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   priceRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     gap: 6,
     marginBottom: 8,
   },
   price: {
-    fontSize: 16,
+    fontSize: 10,
     fontWeight: '800',
     color: Colors.primary,
   },

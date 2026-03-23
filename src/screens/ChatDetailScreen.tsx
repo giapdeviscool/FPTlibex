@@ -21,6 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMessages } from '../service/chat.service';
 import { uploadImage } from '../service/upload.service';
+import { getBookById } from '../service/book.service';
 import { ActivityIndicator } from 'react-native';
 
 const formatPrice = (price: number) => {
@@ -66,7 +67,7 @@ function MessageBubble({ message }: { message: Message }) {
 }
 
 export default function ChatDetailScreen({ route, navigation }: any) {
-  const { conversationId, userName, bookTitle, bookPrice, isOnline } =
+  const { conversationId, userName, bookTitle, bookPrice, bookId, isOnline } =
     route.params;
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -343,7 +344,20 @@ export default function ChatDetailScreen({ route, navigation }: any) {
                 {formatPrice(bookPrice)}
               </Text>
             </View>
-            <TouchableOpacity style={styles.bookBannerButton}>
+            <TouchableOpacity style={styles.bookBannerButton} onPress={async () => {
+              // if (!bookId) return;
+              try {
+
+                const response: any = await getBookById(bookId);
+                const bookData = response?.data || response;
+                if (bookData) {
+                  navigation.navigate('BookDetail', bookData);
+                }
+              } catch (error) {
+                console.error('Error fetching book:', error);
+                Alert.alert('Lỗi', 'Không thể tải thông tin sách');
+              }
+            }}>
               <Text style={styles.bookBannerButtonText}>Xem sách</Text>
             </TouchableOpacity>
           </View>
