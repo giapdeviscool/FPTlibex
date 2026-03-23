@@ -248,7 +248,8 @@ export default function BookDetailScreen({ route, navigation }: any) {
               bookTitle: book.title,
               bookPrice: book.price,
               bookImage: book.image,
-              sellerName: book.seller
+              sellerId: typeof book.seller === 'object' ? (book.seller.studentId || book.seller._id) : book.seller,
+              sellerName: typeof book.seller === 'object' ? (book.seller.name || book.seller.studentId || "Người bán") : book.seller
             })}>
             <Icon name="cart-outline" size={20} color="#FFF" />
             <Text style={styles.buyButtonText}>Mua ngay • {formatPrice(book.price)}</Text>

@@ -11,9 +11,10 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
 import { Colors } from '../theme/colors';
 import SocketService from '../service/socket.service';
+import { getWalletBalance } from '../service/wallet.service';
+import { useFocusEffect } from '@react-navigation/native';
 
 const menuItems = [
   {
@@ -47,17 +48,27 @@ const menuItems = [
 
 export default function ProfileScreen({ navigation }: any) {
   const [user, setUser] = React.useState<any>('');
+  const [balance, setBalance] = React.useState(0);
 
-  const loadUser = async () => {
+  const loadData = async () => {
     const userInfo = await AsyncStorage.getItem('user_info');
     if (userInfo) {
       setUser(JSON.parse(userInfo));
+    }
+    try {
+      const res = await getWalletBalance();
+      if (res.success) {
+        console.log("hic", res.balance)
+        setBalance(res.balance);
+      }
+    } catch (error) {
+      console.log('Error fetching balance:', error);
     }
   };
 
   useFocusEffect(
     React.useCallback(() => {
-      loadUser();
+      loadData();
     }, [])
   );
 
@@ -133,6 +144,15 @@ export default function ProfileScreen({ navigation }: any) {
             </View>
             <Text style={styles.statLabel}>Đánh giá</Text>
           </View>
+        </View>
+
+        {/* Wallet Balance */}
+        <View style={styles.walletContainer}>
+          <View style={styles.walletLeft}>
+            <Icon name="wallet" size={24} color={Colors.primary} />
+            <Text style={styles.walletLabel}>Số dư ví F-Coin</Text>
+          </View>
+          <Text style={styles.walletBalance}>{balance.toLocaleString('vi-VN')}</Text>
         </View>
 
         {/* Menu Items */}
@@ -324,9 +344,34 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 1,
     shadowRadius: 8,
     elevation: 2,
+  },
+  walletContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E6',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 137, 34, 0.3)',
+  },
+  walletLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  walletLabel: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  walletBalance: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: Colors.primary,
   },
   menuItem: {
     flexDirection: 'row',

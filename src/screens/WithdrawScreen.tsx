@@ -11,8 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { withdrawCoin, getWalletBalance } from '../service/wallet.service';
+import { useFocusEffect } from '@react-navigation/native';
 
 // 1 F-Coin = 1 VND
 const MIN_WITHDRAW = 50000;
@@ -22,12 +24,29 @@ export default function WithdrawScreen({ navigation }: any) {
   const [bankName, setBankName] = useState('TPBank');
   const [accountNumber, setAccountNumber] = useState('0987654321');
   const [accountName, setAccountName] = useState('NGUYEN VAN A');
-  
-  // Mock balance
-  const [currentBalance, setCurrentBalance] = useState(150000); 
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const [currentBalance, setCurrentBalance] = useState(0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+      const fetchBalance = async () => {
+        try {
+          const res = await getWalletBalance();
+          if (isActive && res.success) {
+            setCurrentBalance(res.data.balance);
+          }
+        } catch (error) {
+          console.error("Lỗi lấy số dư:", error);
+        }
+      };
+      fetchBalance();
+      return () => { isActive = false; };
+    }, [])
+  );
 
   const amount = parseInt(amountStr.replace(/\D/g, ''), 10) || 0;
-
   const handleWithdraw = () => {
     if (amount < MIN_WITHDRAW) {
       Alert.alert('Lỗi', `Số tiền rút tối thiểu là ${MIN_WITHDRAW.toLocaleString('vi-VN')} F-Coin`);
@@ -40,36 +59,45 @@ export default function WithdrawScreen({ navigation }: any) {
 
     Alert.alert(
       'Xác nhận rút tiền',
-      `Bạn yêu cầu rút ${amount.toLocaleString('vi-VN')} F-Coin về tài khoản:\n\nNgân hàng: ${bankName}\nSTK: ${accountNumber}\nTên: ${accountName}\n\n(Tính năng mock)`,
+      `Bạn yêu cầu rút ${amount.toLocaleString('vi-VN')} F-Coin về tài khoản:\n\nNgân hàng: ${bankName}\nSTK: ${accountNumber}\nTên: ${accountName}\n\n(Tính năng gọi API thật)`,
       [
         { text: 'Hủy', style: 'cancel' },
-        { 
-          text: 'Xác nhận', 
-          onPress: () => {
-            // Mock success
-            setCurrentBalance(prev => prev - amount);
-            setAmountStr('');
-            Alert.alert(
-              'Gửi yêu cầu thành công', 
-              'Yêu cầu rút tiền của bạn đang được xử lý. Tiền sẽ được chuyển vào tài khoản trong vòng 24h làm việc.'
-            );
+        {
+          text: 'Xác nhận',
+          onPress: async () => {
+            try {
+              setIsProcessing(true);
+              const res = await withdrawCoin(amount, `${bankName} - ${accountNumber} - ${accountName}`);
+
+              if (res.success) {
+                Alert.alert(
+                  'Thành công',
+                  'Yêu cầu rút tiền của bạn đang được xử lý. Tiền sẽ được chuyển vào tài khoản trong thời gian sớm nhất.'
+                );
+                setCurrentBalance(res.balance);
+                setAmountStr('');
+              }
+            } catch (error: any) {
+              Alert.alert('Lỗi', error.response?.data?.message || 'Có lỗi xảy ra khi rút tiền');
+            } finally {
+              setIsProcessing(false);
+            }
           }
         }
       ]
     );
   };
-
   const setMaxAmount = () => {
     setAmountStr(currentBalance.toString());
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <StatusBar barStyle="dark-content" backgroundColor={Colors.surface} />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
@@ -82,7 +110,7 @@ export default function WithdrawScreen({ navigation }: any) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Balance Info */}
         <View style={styles.balanceContainer}>
           <Text style={styles.balanceLabel}>Số dư khả dụng</Text>
@@ -148,16 +176,16 @@ export default function WithdrawScreen({ navigation }: any) {
           </Text>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[
-            styles.submitBtn, 
+            styles.submitBtn,
             (!amount || amount < MIN_WITHDRAW || amount > currentBalance) && styles.submitBtnDisabled
           ]}
           onPress={handleWithdraw}
-          disabled={!amount || amount < MIN_WITHDRAW || amount > currentBalance}
+          disabled={!amount || amount < MIN_WITHDRAW || amount > currentBalance || isProcessing}
           activeOpacity={0.8}
         >
-          <Text style={styles.submitBtnText}>Rút tiền</Text>
+          <Text style={styles.submitBtnText}>{isProcessing ? 'Đang xử lý...' : 'Rút tiền'}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>

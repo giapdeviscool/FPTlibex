@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import { Colors } from '../theme/colors';
+import { depositCoin, getWalletBalance } from '../service/wallet.service';
+import { useFocusEffect } from '@react-navigation/native';
 
 // Conversion rate: 1 VND = 1 F-Coin
 const EXCHANGE_RATE = 1;
@@ -32,15 +34,44 @@ const paymentMethods = [
 export default function DepositScreen({ navigation }: any) {
   const [selectedPackage, setSelectedPackage] = useState(packages[1]); // Default 20k
   const [selectedMethod, setSelectedMethod] = useState(paymentMethods[0]);
-  const [currentBalance, setCurrentBalance] = useState(50); // Mock current user balance
+  const [currentBalance, setCurrentBalance] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleDeposit = () => {
-    navigation.navigate('PaymentQR', {
-      amountStr: selectedPackage.vnd.toLocaleString('vi-VN'),
-      coins: selectedPackage.coins,
-      bonus: selectedPackage.bonus,
-      methodName: selectedMethod.name
-    });
+  // Fetch real balance when entering the screen
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+      const fetchBalance = async () => {
+        try {
+          const res = await getWalletBalance();
+          if (isActive && res.success) {
+            setCurrentBalance(res.data.balance);
+          }
+        } catch (error) {
+          console.error("Lỗi lấy số dư:", error);
+        }
+      };
+      fetchBalance();
+      return () => { isActive = false; };
+    }, [])
+  );
+
+  const handleDeposit = async () => {
+    const totalCoins = selectedPackage.coins + selectedPackage.bonus;
+
+    try {
+      setIsProcessing(true);
+      const res = await depositCoin(totalCoins, `Nạp tiền qua ${selectedMethod.name}`);
+
+      if (res.success) {
+        Alert.alert('Thành công', `Nạp thành công ${totalCoins.toLocaleString('vi-VN')} F-Coin.`);
+        setCurrentBalance(res.data.balance);
+      }
+    } catch (error: any) {
+      Alert.alert('Lỗi', error.response?.data?.message || 'Có lỗi xảy ra khi nạp tiền');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -151,8 +182,9 @@ export default function DepositScreen({ navigation }: any) {
           style={styles.payBtn}
           onPress={handleDeposit}
           activeOpacity={0.8}
+          disabled={isProcessing}
         >
-          <Text style={styles.payBtnText}>Nạp ngay</Text>
+          <Text style={styles.payBtnText}>{isProcessing ? 'Đang xử lý...' : 'Nạp ngay'}</Text>
         </TouchableOpacity>
       </View>
     </View>

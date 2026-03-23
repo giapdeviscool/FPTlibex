@@ -13,17 +13,37 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '../theme/colors';
 import { createOrder } from '../service/order.service';
+import { getWalletBalance } from '../service/wallet.service';
+import { useFocusEffect } from '@react-navigation/native';
 
 const formatPrice = (price: number) => {
   return price.toLocaleString('vi-VN') + ' F-Coin';
 };
 
 export default function CheckoutScreen({ route, navigation }: any) {
-  const { bookId, bookTitle, bookPrice, bookImage, sellerName } = route.params || {};
+  const { bookId, bookTitle, bookPrice, bookImage, sellerId, sellerName } = route.params || {};
 
-  // Mock checking balance
-  const [balance] = useState(150000);
+  const [balance, setBalance] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false);
   const isEnoughBalance = balance >= (Number(bookPrice) || 0);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      let isActive = true;
+      const fetchBalance = async () => {
+        try {
+          const res = await getWalletBalance();
+          if (isActive && res.success) {
+            setBalance(res.data.balance);
+          }
+        } catch (error) {
+          console.error("Lỗi lấy số dư:", error);
+        }
+      };
+      fetchBalance();
+      return () => { isActive = false; };
+    }, [])
+  );
 
   const handleCheckout = () => {
     if (!isEnoughBalance) {
@@ -40,6 +60,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
           text: 'Thanh toán',
           onPress: async () => {
             try {
+              setIsProcessing(true);
               const userInfo = await AsyncStorage.getItem('user_info');
               if (!userInfo) {
                 Alert.alert('Lỗi', 'Vui lòng đăng nhập lại để tiếp tục');
@@ -51,12 +72,12 @@ export default function CheckoutScreen({ route, navigation }: any) {
               const response = await createOrder({
                 bookId: bookId,
                 buyer: user.studentId,
-                seller: sellerName // sellerName passed from BookDetail is the studentId
+                seller: sellerId
               });
               console.log("order : ", response)
               Alert.alert(
                 'Thành công! 🎉',
-                'Đơn hàng của bạn đang được duyệt bởi người bán.',
+                'Đơn hàng của bạn đang được xử lý.',
                 [
                   {
                     text: 'Xem đơn hàng',
@@ -68,8 +89,10 @@ export default function CheckoutScreen({ route, navigation }: any) {
               console.error('Create Order Error:', error);
               Alert.alert(
                 'Lỗi',
-                error.response?.data?.message || 'Không thể tạo đơn hàng'
+                error.response?.data?.message || error.message || 'Không thể tạo đơn hàng'
               );
+            } finally {
+              setIsProcessing(false);
             }
           }
         }
@@ -168,10 +191,11 @@ export default function CheckoutScreen({ route, navigation }: any) {
           <Text style={styles.bottomTotalValue}>{formatPrice(Number(bookPrice))}</Text>
         </View>
         <TouchableOpacity
-          style={[styles.checkoutBtn, !isEnoughBalance && styles.checkoutBtnDisabled]}
+          style={[styles.checkoutBtn, (!isEnoughBalance || isProcessing) && styles.checkoutBtnDisabled]}
           onPress={handleCheckout}
-          activeOpacity={0.8}>
-          <Text style={styles.checkoutBtnText}>ĐẶT HÀNG</Text>
+          activeOpacity={0.8}
+          disabled={!isEnoughBalance || isProcessing}>
+          <Text style={styles.checkoutBtnText}>{isProcessing ? 'ĐANG XỬ LÝ...' : 'ĐẶT HÀNG'}</Text>
         </TouchableOpacity>
       </View>
     </View>
