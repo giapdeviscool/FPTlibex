@@ -31,14 +31,19 @@ export default function LoginScreen({ navigation }: any) {
 
         if (response.user) {
           await AsyncStorage.setItem('user_info', JSON.stringify(response.user));
+          
+          if (response.user.role === 'admin') {
+            navigation.replace('Admin');
+          } else {
+            navigation.replace('MainTabs');
+          }
+        } else {
+          navigation.replace('MainTabs');
         }
-
-        navigation.replace('MainTabs');
       } else {
         Alert.alert('Đăng nhập thất bại', 'Kết quả trả về không hợp lệ.');
       }
     } catch (error: any) {
-      console.error('Login Error:', error);
       Alert.alert(
         'Đăng nhập thất bại',
         error.response?.data?.message || 'MSSV hoặc mật khẩu không chính xác.'

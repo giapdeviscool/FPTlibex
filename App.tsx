@@ -29,6 +29,8 @@ import DepositScreen from './src/screens/DepositScreen';
 import WithdrawScreen from './src/screens/WithdrawScreen';
 import PaymentQRScreen from './src/screens/PaymentQRScreen';
 import CheckoutScreen from './src/screens/CheckoutScreen';
+import AdminScreen from './src/screens/AdminScreen';
+import UserManagementScreen from './src/screens/UserManagementScreen';
 import { Colors } from './src/theme/colors';
 
 const Tab = createBottomTabNavigator();
@@ -90,8 +92,29 @@ const tabIcons: Record<string, { active: string; inactive: string }> = {
   Profile: { active: 'person', inactive: 'person-outline' },
 };
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Main Tabs (Bottom Navigation)
 function MainTabs() {
+  const [role, setRole] = React.useState<string>('user');
+
+  React.useEffect(() => {
+    const getRole = async () => {
+      try {
+        const userInfo = await AsyncStorage.getItem('user_info');
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          setRole(user.role || 'user');
+        }
+      } catch (error) {
+        console.error('Error fetching role:', error);
+      }
+    };
+    getRole();
+  }, []);
+
+  const isAdmin = role === 'admin';
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -117,6 +140,8 @@ function MainTabs() {
         },
         tabBarIcon: ({ focused, color }) => {
           const iconNames = tabIcons[route.name];
+          if (!iconNames) return null;
+          
           const iconName = focused ? iconNames.active : iconNames.inactive;
 
           if (route.name === 'Add') {
@@ -131,21 +156,25 @@ function MainTabs() {
         component={HomeStack}
         options={{ tabBarLabel: 'Trang chủ' }}
       />
-      <Tab.Screen
-        name="Chat"
-        component={ChatStack}
-        options={{ tabBarLabel: 'Tin nhắn' }}
-      />
-      <Tab.Screen
-        name="Add"
-        component={SellStack}
-        options={{ tabBarLabel: 'Đăng bán' }}
-      />
-      <Tab.Screen
-        name="Orders"
-        component={OrderScreen}
-        options={{ tabBarLabel: 'Đơn hàng' }}
-      />
+      {!isAdmin && (
+        <>
+          <Tab.Screen
+            name="Chat"
+            component={ChatStack}
+            options={{ tabBarLabel: 'Tin nhắn' }}
+          />
+          <Tab.Screen
+            name="Add"
+            component={SellStack}
+            options={{ tabBarLabel: 'Đăng bán' }}
+          />
+          <Tab.Screen
+            name="Orders"
+            component={OrderScreen}
+            options={{ tabBarLabel: 'Đơn hàng' }}
+          />
+        </>
+      )}
       <Tab.Screen
         name="Profile"
         component={ProfileScreen}
@@ -169,6 +198,8 @@ function App() {
           <RootStackNav.Screen name="EditProfile" component={EditProfileScreen} />
           <RootStackNav.Screen name="ChatDetail" component={ChatDetailScreen} />
           <RootStackNav.Screen name="BookDetail" component={BookDetailScreen} />
+          <RootStackNav.Screen name="Admin" component={AdminScreen} />
+          <RootStackNav.Screen name="UserManagement" component={UserManagementScreen} />
         </RootStackNav.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>

@@ -34,8 +34,8 @@ export default function WithdrawScreen({ navigation }: any) {
       const fetchBalance = async () => {
         try {
           const res = await getWalletBalance();
-          if (isActive && res.success) {
-            setCurrentBalance(res.data.balance);
+          if (isActive) {
+            setCurrentBalance(res.balance);
           }
         } catch (error) {
           console.error("Lỗi lấy số dư:", error);
@@ -69,7 +69,7 @@ export default function WithdrawScreen({ navigation }: any) {
               setIsProcessing(true);
               const res = await withdrawCoin(amount, `${bankName} - ${accountNumber} - ${accountName}`);
 
-              if (res.success) {
+              if (res) {
                 Alert.alert(
                   'Thành công',
                   'Yêu cầu rút tiền của bạn đang được xử lý. Tiền sẽ được chuyển vào tài khoản trong thời gian sớm nhất.'

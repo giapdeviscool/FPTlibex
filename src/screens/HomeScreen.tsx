@@ -14,7 +14,7 @@ import { Colors } from '../theme/colors';
 import { categories, Book } from '../data/mockBooks';
 import BookCard from '../components/BookCard';
 import { useFocusEffect } from '@react-navigation/native';
-import { getAllSellingBooks } from '../service/book.service';
+import { getAllSellingBooks, getPublicStats } from '../service/book.service';
 
 const { width } = Dimensions.get('window');
 
@@ -22,10 +22,16 @@ export default function HomeScreen({ navigation }: any) {
   const [selectedCategory, setSelectedCategory] = useState('1');
   const [searchText, setSearchText] = useState('');
   const [books, setBooks] = useState<Book[]>([]);
+  const [summaryStats, setSummaryStats] = useState({
+    totalBooksSelling: 0,
+    totalBooksSold: 0,
+    totalSellers: 0
+  });
 
   useFocusEffect(
     useCallback(() => {
       fetchBooks();
+      fetchStats();
       return () => {
         setBooks([]);
       }
@@ -33,9 +39,23 @@ export default function HomeScreen({ navigation }: any) {
   );
 
   const fetchBooks = async () => {
-    const response = await getAllSellingBooks();
-    // Handle both { success: true, data: [...] } and direct array
-    setBooks(response?.data || response || []);
+    try {
+      const response = await getAllSellingBooks();
+      setBooks(response?.data || response || []);
+    } catch (error) {
+      console.error('Error fetching books:', error);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const response = await getPublicStats();
+      if (response && response.data) {
+        setSummaryStats(response.data);
+      }
+    } catch (error) {
+      console.error('Error fetching public stats:', error);
+    }
   };
 
   const filteredBooks = useMemo(() => {
@@ -128,7 +148,7 @@ export default function HomeScreen({ navigation }: any) {
               <Icon name="book-outline" size={20} color={Colors.primary} />
             </View>
             <View>
-              <Text style={styles.statNumber}>1,234</Text>
+              <Text style={styles.statNumber}>{summaryStats.totalBooksSelling.toLocaleString('vi-VN')}</Text>
               <Text style={styles.statLabel}>Sách đang bán</Text>
             </View>
           </View>
@@ -138,7 +158,7 @@ export default function HomeScreen({ navigation }: any) {
               <Icon name="people-outline" size={20} color={Colors.success} />
             </View>
             <View>
-              <Text style={styles.statNumber}>567</Text>
+              <Text style={styles.statNumber}>{summaryStats.totalSellers.toLocaleString('vi-VN')}</Text>
               <Text style={styles.statLabel}>Người bán</Text>
             </View>
           </View>
@@ -148,7 +168,7 @@ export default function HomeScreen({ navigation }: any) {
               <Icon name="swap-horizontal-outline" size={20} color="#3B82F6" />
             </View>
             <View>
-              <Text style={styles.statNumber}>892</Text>
+              <Text style={styles.statNumber}>{summaryStats.totalBooksSold.toLocaleString('vi-VN')}</Text>
               <Text style={styles.statLabel}>Đã bán</Text>
             </View>
           </View>

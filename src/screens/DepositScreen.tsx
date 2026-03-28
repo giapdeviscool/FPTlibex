@@ -44,8 +44,8 @@ export default function DepositScreen({ navigation }: any) {
       const fetchBalance = async () => {
         try {
           const res = await getWalletBalance();
-          if (isActive && res.success) {
-            setCurrentBalance(res.data.balance);
+          if (isActive) {
+            setCurrentBalance(res.balance);
           }
         } catch (error) {
           console.error("Lỗi lấy số dư:", error);
@@ -63,9 +63,9 @@ export default function DepositScreen({ navigation }: any) {
       setIsProcessing(true);
       const res = await depositCoin(totalCoins, `Nạp tiền qua ${selectedMethod.name}`);
 
-      if (res.success) {
+      if (res) {
         Alert.alert('Thành công', `Nạp thành công ${totalCoins.toLocaleString('vi-VN')} F-Coin.`);
-        setCurrentBalance(res.data.balance);
+        setCurrentBalance(res.balance);
       }
     } catch (error: any) {
       Alert.alert('Lỗi', error.response?.data?.message || 'Có lỗi xảy ra khi nạp tiền');

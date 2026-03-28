@@ -71,3 +71,15 @@ export const updateSellingBook = async (bookId: string, bookData: any) => {
         throw error;
     }
 }
+
+export const getPublicStats = async () => {
+    try {
+        return await axiosClient.get<{
+            totalBooksSelling: number;
+            totalBooksSold: number;
+            totalSellers: number;
+        }>(`${BOOK_API.SELLING_BOOK}/stats/summary`);
+    } catch (error) {
+        throw error;
+    }
+}

@@ -38,12 +38,6 @@ const menuItems = [
     color: '#3B82F6', // Blue
     route: 'EditProfile',
   },
-  {
-    id: '2',
-    icon: 'bookmark-outline',
-    title: 'Sách đã lưu',
-    color: '#8B5CF6', // Purple
-  },
 ];
 
 export default function ProfileScreen({ navigation }: any) {
@@ -57,10 +51,10 @@ export default function ProfileScreen({ navigation }: any) {
     }
     try {
       const res = await getWalletBalance();
-      if (res.success) {
-        console.log("hic", res.balance)
-        setBalance(res.balance);
-      }
+      // if (res.success) {
+      console.log("hic", res)
+      setBalance(res.balance);
+      // }
     } catch (error) {
       console.log('Error fetching balance:', error);
     }
@@ -126,38 +120,60 @@ export default function ProfileScreen({ navigation }: any) {
         </View>
 
         {/* Stats Section */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>12</Text>
-            <Text style={styles.statLabel}>Đã bán</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>3</Text>
-            <Text style={styles.statLabel}>Đang bán</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <View style={styles.ratingWrap}>
-              <Text style={styles.statValue}>4.8</Text>
-              <Icon name="star" size={16} color="#F59E0B" />
+        {user?.role !== 'admin' && (
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>12</Text>
+              <Text style={styles.statLabel}>Đã bán</Text>
             </View>
-            <Text style={styles.statLabel}>Đánh giá</Text>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>3</Text>
+              <Text style={styles.statLabel}>Đang bán</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <View style={styles.ratingWrap}>
+                <Text style={styles.statValue}>4.8</Text>
+                <Icon name="star" size={16} color="#F59E0B" />
+              </View>
+              <Text style={styles.statLabel}>Đánh giá</Text>
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Wallet Balance */}
-        <View style={styles.walletContainer}>
-          <View style={styles.walletLeft}>
-            <Icon name="wallet" size={24} color={Colors.primary} />
-            <Text style={styles.walletLabel}>Số dư ví F-Coin</Text>
+        {user?.role !== 'admin' && (
+          <View style={styles.walletContainer}>
+            <View style={styles.walletLeft}>
+              <Icon name="wallet" size={24} color={Colors.primary} />
+              <Text style={styles.walletLabel}>Số dư ví F-Coin</Text>
+            </View>
+            <Text style={styles.walletBalance}>{balance.toLocaleString('vi-VN')}</Text>
           </View>
-          <Text style={styles.walletBalance}>{balance.toLocaleString('vi-VN')}</Text>
-        </View>
+        )}
 
         {/* Menu Items */}
         <View style={styles.menuContainer}>
-          {menuItems.map((item, index) => (
+          {[
+            ...menuItems.filter(item => {
+              if (user?.role === 'admin') {
+                return !['deposit', 'withdraw'].includes(item.id);
+              }
+              return true;
+            }),
+            ...(user?.role === 'admin'
+              ? [
+                {
+                  id: 'admin_panel',
+                  icon: 'shield-checkmark-outline',
+                  title: 'Quản trị viên',
+                  color: Colors.primary,
+                  route: 'Admin',
+                },
+              ]
+              : []),
+          ].map((item, index, array) => (
             <React.Fragment key={item.id}>
               <TouchableOpacity
                 style={styles.menuItem}
@@ -174,7 +190,7 @@ export default function ProfileScreen({ navigation }: any) {
                 <Text style={styles.menuTitle}>{item.title}</Text>
                 <Icon name="chevron-forward" size={20} color={Colors.border} />
               </TouchableOpacity>
-              {index < menuItems.length - 1 && <View style={styles.menuDivider} />}
+              {index < array.length - 1 && <View style={styles.menuDivider} />}
             </React.Fragment>
           ))}
         </View>

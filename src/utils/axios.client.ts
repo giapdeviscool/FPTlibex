@@ -38,7 +38,6 @@ axiosClient.interceptors.response.use(
     return response;
   },
   (error) => {
-    console.error('Lỗi khi gọi API:', error);
     return Promise.reject(error);
   }
 );

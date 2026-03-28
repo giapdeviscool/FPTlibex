@@ -33,8 +33,8 @@ export default function CheckoutScreen({ route, navigation }: any) {
       const fetchBalance = async () => {
         try {
           const res = await getWalletBalance();
-          if (isActive && res.success) {
-            setBalance(res.data.balance);
+          if (isActive) {
+            setBalance(res.balance);
           }
         } catch (error) {
           console.error("Lỗi lấy số dư:", error);
@@ -173,7 +173,7 @@ export default function CheckoutScreen({ route, navigation }: any) {
           <View style={styles.balanceRow}>
             <View style={styles.balanceLeft}>
               <Icon name="wallet" size={22} color={Colors.primary} />
-              <Text style={styles.balanceLabel}>Số dư ví F-Coin</Text>
+              <Text style={styles.balanceLabel}>Số dư ví F-Coin </Text>
             </View>
             <Text style={styles.balanceAmount}>{formatPrice(balance)}</Text>
           </View>
